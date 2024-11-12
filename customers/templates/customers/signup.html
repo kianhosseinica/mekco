@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Signup - Mekco Supply Inc.</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            display: grid;
+            place-items: center;
+            height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            padding: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .signup-container {
+            background-color: white;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+
+        .signup-container:hover { transform: scale(1.02); }
+
+        .signup-container h1 {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #007bff;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 1rem;
+            border: 2px solid #d3d3d3;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-submit {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.4s, box-shadow 0.3s;
+        }
+
+        .btn-submit:hover {
+            background: linear-gradient(to right, #2575fc, #6a11cb);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 1rem;
+        }
+
+        .login-link a {
+            color: #007bff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .login-link a:hover { color: #0056b3; }
+
+        .email-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+        }
+
+        .email-tag {
+            background-color: #007bff;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .email-tag button {
+            background: none;
+            border: none;
+            color: white;
+            margin-left: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .email-tag button:hover { color: #ff4d4d; }
+
+        .form-text { color: #6c757d; }
+    </style>
+</head>
+
+<body>
+    <!-- Display Django messages as alerts -->
+    {% if messages %}
+        <div class="container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="signup-container">
+        <h1>Signup</h1>
+        <form method="post" id="signup-form">
+            {% csrf_token %}
+
+            <!-- Email field -->
+            <div class="mb-3">
+                <label class="form-label" for="id_email">Email</label>
+                <input type="email" name="email" class="form-control" value="{{ form.email.value|default_if_none:'' }}" required>
+                {% if form.email.errors %}
+                    <div class="text-danger">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Phone number field -->
+            <div class="mb-3">
+                <label class="form-label" for="id_phone_number">Phone Number</label>
+                <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number.value|default_if_none:'' }}" required>
+                {% if form.phone_number.errors %}
+                    <div class="text-danger">{{ form.phone_number.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- First name field -->
+            <div class="mb-3">
+                <label class="form-label" for="id_first_name">First Name</label>
+                <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default_if_none:'' }}" required>
+                {% if form.first_name.errors %}
+                    <div class="text-danger">{{ form.first_name.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Last name field -->
+            <div class="mb-3">
+                <label class="form-label" for="id_last_name">Last Name</label>
+                <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default_if_none:'' }}" required>
+                {% if form.last_name.errors %}
+                    <div class="text-danger">{{ form.last_name.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Company name field -->
+            <div class="mb-3">
+                <label class="form-label" for="id_company_name">Company Name</label>
+                <input type="text" name="company_name" class="form-control" value="{{ form.company_name.value|default_if_none:'' }}" required>
+                {% if form.company_name.errors %}
+                    <div class="text-danger">{{ form.company_name.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Additional Emails Tag Input (Optional) -->
+            <div class="mb-3">
+                <label class="form-label">Additional emails (optional)</label>
+                <input type="text" id="email-input" class="form-control" placeholder="Enter email and press Enter">
+                <small class="form-text">Enter additional emails one by one.</small>
+                <div class="email-tags-container" id="email-tags-container"></div>
+                <input type="hidden" name="additional_emails" id="additional-emails-input">
+            </div>
+
+            <!-- Address Fields -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="id_street">Street</label>
+                    <input type="text" name="street" class="form-control" value="{{ form.street.value|default_if_none:'' }}" required>
+                    {% if form.street.errors %}
+                        <div class="text-danger">{{ form.street.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="id_city">City</label>
+                    <input type="text" name="city" class="form-control" value="{{ form.city.value|default_if_none:'' }}" required>
+                    {% if form.city.errors %}
+                        <div class="text-danger">{{ form.city.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="id_province">Province</label>
+                    <input type="text" name="province" class="form-control" value="{{ form.province.value|default_if_none:'' }}" required>
+                    {% if form.province.errors %}
+                        <div class="text-danger">{{ form.province.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="id_postal_code">Postal Code</label>
+                    <input type="text" name="postal_code" class="form-control" value="{{ form.postal_code.value|default_if_none:'' }}" required>
+                    {% if form.postal_code.errors %}
+                        <div class="text-danger">{{ form.postal_code.errors|join:", " }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="id_country">Country</label>
+                <input type="text" name="country" class="form-control" value="{{ form.country.value|default_if_none:'' }}" required>
+                {% if form.country.errors %}
+                    <div class="text-danger">{{ form.country.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Password Fields -->
+            <div class="mb-3">
+                <label class="form-label" for="id_password1">Password</label>
+                <input type="password" name="password1" class="form-control" required>
+                {% if form.password1.errors %}
+                    <div class="text-danger">{{ form.password1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="id_password2">Confirm Password</label>
+                <input type="password" name="password2" class="form-control" required>
+                {% if form.password2.errors %}
+                    <div class="text-danger">{{ form.password2.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-submit w-100">Signup</button>
+        </form>
+        <div class="login-link">
+            <p>Already have an account? <a href="{% url 'customers:login' %}">Login here</a></p>
+        </div>
+    </div>
+
+    <script>
+        const emailInput = document.getElementById('email-input');
+        const emailTagsContainer = document.getElementById('email-tags-container');
+        const additionalEmailsInput = document.getElementById('additional-emails-input');
+        let emailList = [];
+
+        function addEmailTag(email) {
+            const tag = document.createElement('div');
+            tag.classList.add('email-tag');
+            tag.textContent = email;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => removeEmail(email, tag);
+            tag.appendChild(removeBtn);
+
+            emailTagsContainer.appendChild(tag);
+            emailList.push(email);
+            additionalEmailsInput.value = emailList.join(',');
+        }
+
+        function removeEmail(email, tag) {
+            emailTagsContainer.removeChild(tag);
+            emailList = emailList.filter(e => e !== email);
+            additionalEmailsInput.value = emailList.join(',');
+        }
+
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        emailInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const email = emailInput.value.trim();
+
+                if (email && !emailList.includes(email) && emailPattern.test(email)) {
+                    addEmailTag(email);
+                    emailInput.value = '';
+                } else if (emailList.includes(email)) {
+                    alert("This email has already been added.");
+                    emailInput.value = '';
+                } else {
+                    alert("Please enter a valid email address.");
+                }
+            }
+        });
+    </script>
+</body>
+</html>

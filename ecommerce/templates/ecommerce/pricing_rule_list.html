@@ -1,0 +1,7 @@
+<h1>Pricing Rules</h1>
+<a href="{% url 'ecommerce:add_pricing_rule' %}">Add New Pricing Rule</a>
+<ul>
+    {% for rule in pricing_rules %}
+        <li>{{ rule.customer_type }} - {{ rule.category.name }} - {{ rule.discount_percentage }}%</li>
+    {% endfor %}
+</ul>

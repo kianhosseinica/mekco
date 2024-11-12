@@ -1,0 +1,6 @@
+<form method="POST" action="{% url 'archive_customers' %}">
+    {% csrf_token %}
+    <label for="customer_ids">Enter Customer IDs (comma separated):</label>
+    <textarea name="customer_ids" id="customer_ids" rows="4" cols="50"></textarea>
+    <button type="submit">Archive Customers</button>
+</form>

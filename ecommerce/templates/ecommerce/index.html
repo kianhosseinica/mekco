@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mekco Supply Inc.</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/all.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/v4-shims.css">
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.carousel.min.css' %}">
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.theme.default.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick-theme.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick.min.js"></script>
+    <script defer src="{% static 'js/script.js' %}"></script>
+</head>
+<body>
+    <header>
+        <div class="topnav">
+            <div class="logo-topnav">
+                <a href="https://apprand.com/mekcosupply.com/">
+                    <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Supply" class="logo-topnav" width="100px">
+                </a>
+            </div>
+            <ul class="nav-links">
+                <li><a href="https://maps.app.goo.gl/MWzRrqAPxbSemYLx7"><i class="fas fa-map-pin"></i></a></li>
+                <li><a href="tel:905-597-4597"><i class="fas fa-phone"></i></a></li>
+                <li><a href="mailto:shop@mekcosupply.com"><i class="fas fa-envelope"></i></a></li>
+                <li><a href="#"><i class="fas fa-user"></i></a></li>
+                <li><a href="#"><i class="fas fa-shopping-cart"></i></a></li>
+                <li><a href="#"><i class="fas fa-sign-out-alt"></i></a></li>
+            </ul>
+        </div>
+        <nav class="navbar">
+            <div class="filters">
+                <div class="dropdown">
+                    <select>
+                        <option value="filter1">CATEGORIES</option>
+                        <option value="option1">PLUMBING & DRAIN</option>
+                        <option value="option2">PUMPS</option>
+                        <option value="option3">VALVES</option>
+                        <option value="option4">WATERWORKS</option>
+                        <option value="option5">TOOLS</option>
+                        <option value="option6">HVAC</option>
+                        <option value="option7">HYDRONICS</option>
+                    </select>
+                </div>
+                <div class="dropdown">
+                    <select>
+                        <option value="filter2">MENU</option>
+                        <option value="option1">ORDER STATUS</option>
+                        <option value="option2">REGISTRATION</option>
+                        <option value="option3">QUOTE REQUEST</option>
+                        <option value="option4">ABOUT US</option>
+                        <option value="option5">CONTACT US</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+        </nav>
+        <div class="mobile-menu">
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Services</a></li>
+                <li><a href="#">Contact Us</a></li>
+                <li><a href="#">Cart</a></li>
+                <li>
+                    <div class="search-container">
+                        <input type="text" id="mobileSearch" placeholder="Search...">
+                        <span class="clear-search" id="clearSearch">&#10006;</span>
+                    </div>
+                </li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </div>
+        <div id="slideTab" class="slide-tab">
+            <a href="javascript:void(0)" class="closebtn" onclick="closeTab()">×</a>
+        </div>
+        <span class="openbtn" onclick="openTab()">☰ $100,00.00</span>
+    </header>
+
+    <div class="product-page">
+    <div class="product-gallery">
+        <div class="main-image">
+            <img src="{% static 'img/ABS-Line-Cleanout-4.jpg' %}" id="main-product-image" alt="Main Product Image">
+        </div>
+        <div class="thumbnail-grid">
+            <img src="{% static 'img/ABS-Line-Cleanout-4.jpg' %}" alt="Thumbnail 1" class="thumbnail">
+            <img src="{% static 'img/Ball-valve-150x150.jpg' %}" alt="Thumbnail 2" class="thumbnail">
+            <img src="{% static 'img/ABS-Line-Cleanout-4.jpg' %}" alt="Thumbnail 3" class="thumbnail">
+            <img src="{% static 'img/ABS-Line-Cleanout-4.jpg' %}" alt="Thumbnail 4" class="thumbnail">
+        </div>
+    </div>
+    <div class="product-details">
+        <h1 class="product-name">GRUNDFOS - Hot Water Recirculation System</h1>
+        <div class="product-sku">SKU: 99412493</div>
+        <div class="product-upc">UPC: 5713828699282</div>
+        <div class="product-brand-name">BRAND: 3M</div>
+        <div class="product-brand">
+            Brand: <img src="{% static 'img/3M_wordmark.svg.png' %}" alt="Brand Logo">
+        </div>
+        <div class="product-price">Price: CAD $487.08</div>
+        <div class="product-quantity">
+            <label for="quantity">Quantity:</label>
+            <input type="number" id="quantity" name="quantity" min="1" value="1">
+        </div>
+        <button class="add-to-cart-btn">Add to Cart</button>
+        <div class="product-description">
+            <h2>Description</h2>
+            <p>
+                This GRUNDFOS hot water recirculation system is designed to provide hot water quickly to every faucet and shower in your home. It is energy-efficient and easy to install, making it a perfect solution for homeowners looking to reduce water waste and improve convenience.
+            </p>
+        </div>
+    </div>
+</div>
+<script src="{% static 'js/script.js' %}"></script>
+
+
+    <footer>
+        <div class="footer-content">
+            <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" alt="Footer Image" class="footer-image">
+            <p>&copy; <span id="current-year"></span> Mekco Supply Inc. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Set the current year in the footer
+        document.getElementById("current-year").textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

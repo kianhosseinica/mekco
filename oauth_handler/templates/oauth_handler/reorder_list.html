@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reorder List</title>
+    <style>
+        /* Base Styling */
+        body {
+            background-color: #faf4ee; /* Warm beige */
+            color: #333;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 10px;
+        }
+        h1 {
+            color: #b5651d; /* Warm brown */
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        /* Filter Form */
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff7f0; /* Light beige */
+            border: 1px solid #e3dac9;
+            border-radius: 8px;
+        }
+        .filter-form select,
+        .filter-form input,
+        .filter-form button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+        .filter-form button {
+            background-color: #d88a55; /* Soft orange */
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .filter-form button:hover {
+            background-color: #b06a3c;
+        }
+
+        /* Item Cards */
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .item-card {
+            background-color: #fff;
+            border: 1px solid #e3dac9;
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1 1 calc(33% - 20px);
+            max-width: calc(33% - 20px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .item-card:hover {
+            transform: scale(1.02);
+        }
+        .item-card h5 {
+            font-size: 1.2em;
+            margin: 0 0 10px;
+            color: #333;
+        }
+        .item-card h6 {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .item-card p {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .item-card a {
+            color: #b5651d;
+            text-decoration: none;
+        }
+        .item-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            padding: 8px 12px;
+            margin: 0 4px;
+            background-color: #d88a55;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .pagination a:hover {
+            background-color: #b06a3c;
+        }
+        .pagination .current-page {
+            padding: 8px 12px;
+            margin: 0 4px;
+            background-color: #b5651d;
+            color: white;
+            border-radius: 4px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .filter-form {
+                flex-direction: column;
+            }
+            .item-card {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Items to Reorder</h1>
+
+        <!-- Filter Form -->
+        <form method="get" class="filter-form">
+            <select name="brand">
+                <option value="">Choose a brand</option>
+                {% for brand in brands %}
+                <option value="{{ brand.name }}" {% if brand_query == brand.name %}selected{% endif %}>{{ brand.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="vendor">
+                <option value="">Choose a vendor</option>
+                {% for vendor in vendors %}
+                <option value="{{ vendor.name }}" {% if vendor_query == vendor.name %}selected{% endif %}>{{ vendor.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="category" onchange="loadSubcategories(this.value);">
+                <option value="">Choose a category</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if category_query == category.id %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="search" placeholder="Search by SKU or name" value="{{ search_query }}">
+            <button type="submit">Filter</button>
+            <a href="{% url 'list-reorder-items' %}" class="btn btn-secondary btn-clear">Clear</a>
+        </form>
+
+        <!-- Items Display -->
+        <div class="item-list">
+            {% for item in page_obj.object_list %}
+            <div class="item-card">
+                <h5>{{ item.description }}</h5>
+                <h6>SKU: {{ item.manufacturer_sku }}</h6>
+                <p>Brand: {{ item.brand.name }}</p>
+                <p>Vendor: {{ item.vendor.name }}</p>
+                <p>Category: {{ item.category.name }}</p>
+                <p>Current Quantity: {{ item.quantity_on_hand }}</p>
+                <p>Reorder Point: {{ item.reorder_point }}</p>
+                <p>Reorder Level: {{ item.reorder_level }}</p>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center">No items found matching the criteria.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if brand_query %}&brand={{ brand_query }}{% endif %}{% if vendor_query %}&vendor={{ vendor_query }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_query %}&category={{ category_query }}{% endif %}">Previous</a>
+            {% endif %}
+
+            <span class="current-page">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if brand_query %}&brand={{ brand_query }}{% endif %}{% if vendor_query %}&vendor={{ vendor_query }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_query %}&category={{ category_query }}{% endif %}">Next</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function loadSubcategories(categoryId) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('category', categoryId);
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html>

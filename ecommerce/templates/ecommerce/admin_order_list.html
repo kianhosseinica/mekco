@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order List</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #fdf7f1; /* Soft, light background */
+            color: #333333;
+        }
+        h1 {
+            color: #ba6122;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: fadeIn 0.6s ease-out;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            border-bottom: 2px solid #dcdcdc;
+            margin-bottom: 20px;
+            justify-content: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            background-color: #ffd699;
+            color: #333333;
+            border: 1px solid #dcdcdc;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        .tab.active {
+            background-color: #ba6122;
+            color: white;
+            font-weight: bold;
+        }
+        .tab:hover {
+            background-color: #e3874a;
+            transform: translateY(-2px);
+        }
+        .tab-content {
+            display: none;
+            background-color: #f8f1e7;
+            padding: 20px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translateY(10px);
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive Table */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e3e3e3;
+            transition: background-color 0.3s ease;
+        }
+        th {
+            background-color: #ffd699;
+            color: #333333;
+        }
+        tr {
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        tr:hover {
+            background-color: #ffe5b3;
+            transform: scale(1.01);
+        }
+        tr.fade-in {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: rowFadeIn 0.6s ease forwards;
+        }
+        a {
+            color: #ba6122;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        a:hover {
+            color: #96491b;
+            text-decoration: underline;
+        }
+        button {
+            background-color: #ba6122;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+        button:hover {
+            background-color: #e3874a;
+            transform: translateY(-2px);
+        }
+        .action-select {
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #dcdcdc;
+            transition: box-shadow 0.3s ease;
+        }
+        .action-select:focus {
+            box-shadow: 0 0 6px rgba(210, 105, 30, 0.5);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rowFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .tabs { flex-direction: column; align-items: stretch; }
+            .tab { width: 100%; text-align: center; }
+            h1 { font-size: 24px; }
+            button, .action-select { font-size: 14px; padding: 8px 15px; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 20px; margin-bottom: 15px; }
+            table, th, td { font-size: 12px; padding: 10px; }
+            button, .action-select { font-size: 12px; padding: 7px 10px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Order List</h1>
+
+    <!-- Tabs for each status -->
+    <div class="tabs">
+        {% for status_display, orders in orders_by_status.items %}
+            {% if orders %}
+                <div class="tab" onclick="showTab('{{ status_display }}')">{{ status_display }}</div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    <!-- Content for each tab -->
+    <form method="post">
+        {% csrf_token %}
+        {% for status_display, orders in orders_by_status.items %}
+            {% if orders %}
+            <section id="tab-{{ status_display }}" class="tab-content">
+                <h2>{{ status_display }}</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Order Number</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Created at</th>
+                                <th>Updated at</th>
+                                <th>Order Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr class="fade-in">
+                                <td><input type="checkbox" name="selected_orders" value="{{ order.id }}"></td>
+                                <td>{{ order.order_number }}</td>
+                                <td>{{ order.customer.email }}</td>
+                                <td>{{ status_display }}</td>
+                                <td>{{ order.created_at }}</td>
+                                <td>{{ order.updated_at }}</td>
+                                <td><a href="{% url 'ecommerce:admin_order_detail' order.id %}">View</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+        {% endfor %}
+
+        <label for="action-select">Choose an action:</label>
+        <select name="action" id="action-select" class="action-select">
+            <option value="" disabled selected>Select an action...</option>
+            <option value="delete">Delete selected orders</option>
+            <option value="mark_as_ready_for_pickup">Mark as Ready for Pickup</option>
+            <option value="mark_as_shipped">Mark as Shipped</option>
+        </select>
+        <button type="submit">Go</button>
+    </form>
+
+    <script>
+        function showTab(status) {
+            document.querySelectorAll('.tab-content').forEach(tabContent => {
+                tabContent.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById('tab-' + status).classList.add('active');
+            document.querySelector(`.tab[onclick="showTab('${status}')"]`).classList.add('active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstTab = document.querySelector('.tab');
+            if (firstTab) {
+                firstTab.click();
+            }
+        });
+    </script>
+</body>
+</html>

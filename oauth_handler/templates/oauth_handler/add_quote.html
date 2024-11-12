@@ -1,0 +1,16 @@
+<!-- quotes/add_quote.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Quote</title>
+</head>
+<body>
+    <h1>Add Quote</h1>
+    <form method="post">
+        {% csrf_token %}
+        <!-- No input field for quote number since it's automatically generated -->
+        <button type="submit">Create Quote</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Inline CSS for email styling */
+        body { font-family: Arial, sans-serif; color: #333; }
+        .email-container { max-width: 600px; margin: auto; padding: 20px; border-radius: 8px; }
+        .email-header { text-align: center; margin-bottom: 20px; }
+        .email-header img { width: 100px; }
+        .email-title { font-size: 24px; font-weight: bold; color: #007bff; text-align: center; }
+        .email-content { font-size: 16px; line-height: 1.6; }
+        .footer-text { text-align: center; color: #888; font-size: 14px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Logo -->
+        <div class="email-header">
+            <img src="{{ logo_url }}" alt="Mekco Supply Logo">
+        </div>
+
+        <!-- Title -->
+        <h2 class="email-title">Order Status Update</h2>
+
+        <!-- Content -->
+        <div class="email-content">
+            <p>Dear {{ order.customer.first_name }},</p>
+            <p>Your order <strong>#{{ order.order_number }}</strong> status has been updated to <strong>{{ status }}</strong>.</p>
+            <p>If you have any questions, feel free to contact our support team.</p>
+            <p>Thank you for shopping with Mekco Supply Inc.!</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-text">
+            <p>&copy; {{ updated_at.year }} Mekco Supply Inc.</p>
+        </div>
+    </div>
+</body>
+</html>

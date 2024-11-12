@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Return Requests for Order {{ order.order_number }}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Return Requests for Order {{ order.order_number }}</h1>
+        <p><strong>Customer:</strong> {{ order.customer.email }}</p>
+        <p><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</p>
+        <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+
+        <h3>Return Requests</h3>
+        {% if return_requests %}
+            <form method="post" action="{% url 'ecommerce:update_return_request_status' order.id %}">
+                {% csrf_token %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Status</th>
+                            <th>Requested On</th>
+                            <th>Denied Reason (if any)</th>
+                            <th>Refund Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in return_requests %}
+                            <tr>
+                                <td>{{ request.item.description }}</td>
+                                <td>{{ request.quantity }}</td>
+                                <td>
+                                    <select name="status_{{ request.id }}" class="form-control">
+                                        {% for status, display in request.STATUS_CHOICES %}
+                                            <option value="{{ status }}" {% if request.status == status %}selected{% endif %}>
+                                                {{ display }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>{{ request.request_date|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <input type="text" name="denied_reason_{{ request.id }}" value="{{ request.denied_reason }}" class="form-control">
+                                </td>
+                                <td>${{ request.refund_amount|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <button type="submit" class="btn btn-primary">Update Return Statuses</button>
+            </form>
+        {% else %}
+            <p>No return requests found for this order.</p>
+        {% endif %}
+        <a href="{% url 'ecommerce:orders_with_returns' %}" class="btn btn-secondary mt-3">Back to Orders with Returns</a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mekco Supply Inc. - Item List</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/all.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/v4-shims.css">
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.carousel.min.css' %}">
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.theme.default.min.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick-theme.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+
+        @media (max-width: 768px) {
+
+
+            .receiptHeader {
+                text-align: center;
+                font-size: 14px;
+            }
+
+            .receiptTypeTitle {
+                font-size: 16px;
+                margin-top: 10px;
+            }
+
+            .sale.lines, .saletotals.totals {
+                width: 100%;
+            }
+
+            .sale.lines th, .sale.lines td,
+            .saletotals.totals th, .saletotals.totals td {
+                padding: 8px;
+                font-size: 12px;
+                line-height: 1.4;
+            }
+
+            .apply-btn {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            .btn.btn-success {
+                width: 100%;
+                font-size: 14px;
+                padding: 8px 0;
+            }
+
+            .total-price-container {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            .total-price-box {
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            .footer-content p {
+                font-size: 11px;
+            }
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin-top: 20px;
+        }
+
+        .filter-form {
+            margin-bottom: 20px;
+        }
+
+        .btn-clear {
+            margin-left: 5px;
+        }
+
+        .breadcrumb {
+            background-color: transparent;
+        }
+
+        .carousel-item img {
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        .category-item {
+            flex: 1 1 calc(25% - 0px);
+            padding: 20px;
+            border: 2px solid black;
+            border-radius: 3px;
+            text-align: center;
+            background-color: #fff;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .category-item:hover {
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+        }
+
+        .category-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        .category-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        .products {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .product {
+            flex: 1 1 calc(25% - 0px);
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            background-color: #fff;
+        }
+
+        .product img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .product-actions {
+            margin-top: 10px;
+        }
+
+        .info-icon {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .popup-box {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            width: 200px;
+            text-align: left;
+        }
+
+        .info-icon:hover .popup-box {
+            display: block;
+        }
+
+        .slide-tab {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 0;
+            height: 100%;
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #ddd;
+            z-index: 1000;
+        }
+
+        .slide-tab .closebtn {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 36px;
+            cursor: pointer;
+        }
+
+        .openbtn {
+            font-size: 20px;
+            cursor: pointer;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            background-color: #d32f2f;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            margin-top: -100px;
+            border-radius: 50px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 200px;
+            height: 60px;
+            font-weight: bold;
+        }
+
+        .openbtn1 {
+            font-size: 20px;
+            position: fixed;
+            bottom: 200px;
+            right: 200px;
+            z-index: 1001;
+            background-color: #d32f2f;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            margin-top: -100px;
+            border-radius: 50px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 200px;
+            height: 60px;
+            font-weight: bold;
+        }
+
+        .total-price {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 24px;
+            color: #ffffff;
+            margin-right: 10px;
+        }
+
+        .center {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .form-select {
+            margin-top: -20px;
+            border: 1px solid #000;
+        }
+
+        .quantity-input {
+            border: 1px solid #000;
+        }
+
+        .total-price-container {
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 250px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .total-price-box {
+            background-color: #d32f2f;
+            color: #fff;
+            padding: 5px;
+            margin-left: 10px;
+            width: fix;
+            text-align: center;
+        }
+
+        .breadcrumb {
+            margin-top: -20px;
+            margin-left: -250px;
+        }
+
+        .class1 {
+            margin-bottom: 5px;
+        }
+
+        .class2 {
+            margin-bottom: 25px;
+        }
+
+        .class3 {
+            margin-top: -25px;
+            margin-right: -300px;
+        }
+
+        .quantity-input.class2 {
+            margin-top: 30px;
+        }
+
+        .quantity-input.class2m {
+            width: 70px;
+            display: block;
+            margin-bottom: 1px;
+            margin-top: 25px;
+        }
+
+        .class3m {
+            display: block;
+            margin-top: 1px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .product {
+            flex: 1 1 calc(25% - 20px);
+            border: 2px solid black;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            background-color: #fff;
+            transition: box-shadow 0.3s;
+        }
+
+        .product:hover {
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .receiptTypeTitle {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .sale.lines {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .sale.lines th, .sale.lines td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .sale.lines th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .quantity input {
+            width: 60px;
+            text-align: center;
+        }
+
+        .apply-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .apply-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .saletotals {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .saletotals tr.total {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        .saletotals td {
+            padding: 10px;
+        }
+
+        .alert {
+            margin-top: 20px;
+            border: 1px solid #f44336;
+            background-color: #ffe6e6;
+            color: #d8000c;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .thankyou {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .aitem {
+            transition: transform 0.3s;
+        }
+
+        .aitem:hover {
+            transform: scale(1.02);
+        }
+
+        .dowwn {
+            margin-top: 20px;
+        }
+
+        .uup {
+            padding-bottom: 40px;
+            position: relative;
+            top: -35px;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            padding: 8px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-form {
+            display: flex;
+            width: 100%;
+            max-width: 350px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+
+            font-size: 15px;
+            transition: all 0.4s ease;
+        }
+
+        .search-input:focus {
+            border-color: #0069d9;
+            box-shadow: 0px 0px 12px rgba(0, 105, 217, 0.5);
+            transform: scale(1.05);
+
+        }
+
+        .search-button {
+            padding: 8px 12px;
+            background-color: #0069d9;
+            color: #fff;
+            border: none;
+            border-radius: 0 10px 10px 0;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+
+        }
+
+        .search-button i {
+            font-size: 16px;
+
+        }
+
+        .search-button:active {
+            transform: scale(0.9);
+        }
+
+
+        @media (max-width: 767px) {
+            .total-price-container {
+                width: 50%;
+                padding: 5px;
+                font-size: 0.85rem;
+            }
+
+            .total-price-container .total-price-box {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+
+            .openbtn1,
+            .openbtn {
+                font-size: 0.85rem;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1024px) {
+
+            .total-price-container {
+                width: 40%;
+                padding: 5px;
+                font-size: 0.8rem;
+            }
+
+            .total-price {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 17px;
+                color: #ffffff;
+                margin-right: 10px;
+            }
+
+            .total-price-container .total-price-box {
+                font-size: 0.75rem;
+                padding: 5px 10px;
+            }
+
+            .openbtn1,
+            .openbtn {
+                font-size: 0.85rem;
+                padding: 6px 12px;
+            }
+
+            .logo-topnav {
+                width: 70px;
+            }
+
+            .nav-links i {
+                font-size: 1.1rem;
+            }
+
+            .category-item img {
+                width: 90%;
+                height: auto;
+            }
+
+            .product img {
+                width: 100%;
+                height: auto;
+            }
+
+            .product h3 {
+                font-size: 1rem;
+            }
+
+            .total-price-container {
+                background-color: #000;
+                color: #fff;
+                padding: 10px;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 150px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 45px;
+            }
+
+            .total-price {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 17px;
+                color: #ffffff;
+                margin-right: 10px;
+            }
+
+            .openbtn {
+                font-size: 17px;
+                cursor: pointer;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1001;
+                background-color: #d32f2f;
+                color: #fff;
+                padding: 10px 20px;
+                border: none;
+                margin-top: -10px;
+                border-radius: 50px;
+                box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                width: 150px;
+                height: 45px;
+                font-weight: bold;
+            }
+
+            .nbar {
+                width: 20px;
+                margin-top: 15px;
+            }
+
+            #category-select {
+                height: 25px;
+                padding: 0 10px;
+                font-size: 0.9rem;
+                border: 1px solid #ccc;
+            }
+
+            #brand {
+                height: 25px;
+                padding: 0 10px;
+                font-size: 0.9rem;
+                border: 1px solid #ccc;
+            }
+        }
+
+        @media (max-width: 767px) {
+
+            .total-price-container {
+                width: 40%;
+                padding: 4px;
+                font-size: 0.75rem;
+            }
+
+            .total-price-container .total-price-box {
+                font-size: 0.9rem;
+                padding: 4px 8px;
+            }
+
+            .openbtn1,
+            .openbtn {
+                font-size: 0.9rem;
+                padding: 5px 10px;
+            }
+
+            .logo-topnav {
+                width: auto;
+                height: auto;
+                max-width: 100%;
+                object-fit: contain;
+            }
+
+
+            .nav-links i {
+                font-size: 1rem;
+            }
+
+
+            .category-item img {
+                width: 100%;
+                height: auto;
+            }
+
+            .product img {
+                width: 100%;
+                height: auto;
+            }
+
+            .product h3 {
+                font-size: 0.95rem;
+            }
+
+            .total-price-container {
+                background-color: #000;
+                color: #fff;
+                padding: 10px;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 150px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 45px;
+            }
+
+            .total-price {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                font-size: 15px;
+                color: #ffffff;
+                margin-right: 10px;
+            }
+
+            .openbtn {
+                font-size: 15px;
+                cursor: pointer;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1001;
+                background-color: #d32f2f;
+                color: #fff;
+                padding: 10px 20px;
+                border: none;
+                margin-top: -10px;
+                border-radius: 50px;
+                box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                width: 150px;
+                height: 45px;
+                font-weight: bold;
+            }
+
+            .nbar {
+                width: 20px;
+                margin-top: 15px;
+            }
+
+            #category-select {
+                height: 25px;
+                padding: 0 10px;
+                font-size: 0.8rem;
+                border: 1px solid #ccc;
+            }
+
+            #brand {
+                height: 25px;
+                padding: 0 10px;
+                font-size: 0.8rem;
+                border: 1px solid #ccc;
+            }
+
+            .m {
+                font-size: 0.6rem;
+            }
+
+            .item-m {
+                width: 65%;
+                justify-items: center;
+                align-items: center;
+                height: 450px;
+                padding: 30px;
+            }
+
+            .item-mm {
+                justify-items: center;
+                align-items: center;
+
+            }
+        }
+
+        .b {
+            margin-right: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .products {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .product {
+                padding: 4px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                text-align: center;
+                box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.1);
+            }
+
+            .product img {
+                max-width: 100%;
+                height: auto;
+                margin-bottom: 2px;
+            }
+
+            .product h3 {
+                font-size: 0.79rem;
+                margin: 2px 0;
+            }
+
+            .info-icon {
+                font-size: 0.79rem;
+                margin-bottom: 2px;
+            }
+
+            .product-actions {
+                display: flex;
+                justify-content: center;
+                gap: 3px;
+            }
+
+            .quantity-input {
+                width: 30px;
+                text-align: center;
+                font-size: 0.7rem;
+            }
+
+            .add-to-cart-btn {
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .page-link {
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #007bff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-size: 14px;
+        }
+
+        .page-link:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .page-link.active {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+
+        .page-link:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 480px) {
+            .pagination {
+                justify-content: space-between;
+                width: 100%;
+                padding: 0 10px;
+            }
+
+            .page-link {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+        }
+
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel/slick/slick.min.js"></script>
+    <script defer src="{% static 'js/script.js' %}"></script>
+</head>
+<body>
+<header>
+
+
+    <div class="topnav">
+        <div class="logo-topnav">
+            <a href="{% url 'ecommerce:item_list' %}">
+                <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Supply" class="logo-topnav"
+                     width="100px">
+            </a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="https://maps.app.goo.gl/MWzRrqAPxbSemYLx7"><i class="fas fa-map-pin"></i></a></li>
+            <li><a href="tel:905-597-4597"><i class="fas fa-phone"></i></a></li>
+            <li><a href="mailto:shop@mekcosupply.com"><i class="fas fa-envelope"></i></a></li>
+            <li><a href="{% url 'customers:profile' %}"><i class="fas fa-user"></i></a></li>
+            <li><a href="{% url 'ecommerce:cart_detail' %}"><i class="fas fa-shopping-cart"></i></a></li>
+            <li><a href="{% url 'customers:logout' %}"><i class="fas fa-sign-out-alt"></i></a></li>
+        </ul>
+    </div>
+
+    <nav class="navbar ">
+        <div class="filters ">
+            <div class="dropdown nbar">
+                <select id="category-select" name="category" class="form-select"
+                        onchange="loadSubcategories(this.value);">
+                    <option value="">CATEGORIES</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}"
+                                {% if selected_category and selected_category.id == category.id %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="dropdown nbar">
+                <select name="brand" id="brand" class="form-select">
+                    <option value="filter2">MENU</option>
+                    <option value="option1">ORDER STATUS</option>
+                    <option value="option2">REGISTRATION</option>
+                    <option value="option3">QUOTE REQUEST</option>
+                    <option value="option4">ABOUT US</option>
+                    <option value="option5">CONTACT US</option>
+                </select>
+            </div>
+        </div>
+    </nav>
+    <div id="slideTab" class="slide-tab">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeTab()">×</a>
+
+        <!-- Cart Summary -->
+        <div class="receiptHeader">
+            <center>
+                <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" width="225px" alt="Mekco Supply"></center>
+            <p class="receiptShopContact">
+                PLUMBING . HYDRONICS . HVAC<br>
+                110 West Beaver Creek Rd. Unit 16<br>
+                Richmond Hill, ON L4B 1J9<br>
+                905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #000; text-decoration: none;">https://www.mekcosupply.com/</a><br>
+            </p>
+        </div>
+
+        <h1 class="receiptTypeTitle">Cart Summary</h1>
+
+        <form method="post" action="{% url 'ecommerce:update_cart_items' %}" id="cart-update-form">
+            {% csrf_token %}
+            <table class="sale lines">
+                <thead>
+                <tr>
+                    <th class="description">Items</th>
+                    <th class="quantity">Quantity</th>
+                    <th class="amount">Price</th>
+                    <th class="apply">Apply</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for cart_item in cart_items %}
+                    <tr>
+                        <td class="description">
+                            <div class="line_description">{{ cart_item.item.description }}</div>
+                        </td>
+                        <td class="quantity">
+                            <input type="number" name="quantity_{{ cart_item.id }}" value="{{ cart_item.quantity }}"
+                                   min="1" max="{{ cart_item.item.item.quantity_on_hand }}" class="form-control"
+                                   onblur="applyQuantityChange({{ cart_item.id }})">
+                            x ${{ cart_item.price }}
+                        </td>
+                        <td class="amount">${{ cart_item.total_price|floatformat:2 }}</td>
+                        <td class="apply">
+                            <button type="button" class="apply-btn" data-item-id="{{ cart_item.id }}"
+                                    onclick="applyQuantityChange({{ cart_item.id }})">Apply
+                            </button>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <table class="saletotals totals mt-3">
+                <tbody>
+                <tr>
+                    <td width="100%">Subtotal</td>
+                    <td class="amount" id="subtotal">${{ total_price|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>Discounts</td>
+                    <td class="amount" id="discounts">-${{ total_discount|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>HST (13%)</td>
+                    <td class="amount" id="hst">${{ hst|floatformat:2 }}</td>
+                </tr>
+                <tr class="total">
+                    <td>Total with HST</td>
+                    <td class="amount" id="total_with_hst">${{ total_price_with_hst|floatformat:2 }}</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="mt-3 text-end">
+                <a href="{% url 'ecommerce:checkout' %}" class="btn btn-success">Proceed to Checkout</a>
+            </div>
+        </form>
+        {% if form_errors %}
+            <div class="alert alert-danger mt-3">
+                <ul>
+                    {% for field, errors in form_errors.items %}
+                        <li>{{ errors.0 }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        <p id="receiptNote" class="note mt-3">
+            * 8% Re-stocking fee will be applicable.<br>
+            * Mekco Supply Invoice must be presented at the time.<br><br>
+            This order is subject to Mekco Supply Inc's Terms and Conditions of Sale.<br>
+        </p>
+        <p id="receiptThankYouNote" class="thankyou">Thank You for Shopping with Us!</p>
+        <span class="openbtn total-price" onclick="openTab()">☰ open cart</span>
+</header>
+<main class="container">
+    <!-- Breadcrumb Navigation -->
+    {% if full_category_path %}
+        <nav aria-label="breadcrumb ">
+            <ol class="breadcrumb ">
+                <li class="breadcrumb-item"><a href="{% url 'ecommerce:item_list' %}">Home</a></li>
+                {% for category in full_category_path %}
+                    {% if not forloop.last %}
+                        <li class="breadcrumb-item "><a
+                                href="{% url 'ecommerce:item_list' %}?category={{ category.id }}">{{ category.name }}</a>
+                        </li>
+                    {% else %}
+                        <li class="breadcrumb-item active" aria-current="page">{{ category.name }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
+    {% endif %}
+    <div class="search-container">
+    <form action="{% url 'ecommerce:item_search' %}" method="get" class="search-form" id="searchForm">
+        <input type="text" name="q" placeholder="Type to search..." class="search-input" id="searchInput" value="{{ query }}">
+        <button type="submit" class="search-button" id="searchButton">
+            <i class="fas fa-search"></i>
+        </button>
+    </form>
+</div>
+
+    <!-- Category Grid -->
+    {% if not selected_category or subcategories %}
+        <div class="category-grid ">
+            {% if subcategories %}
+                {% for subcategory in subcategories %}
+                    <div class="category-item aitem ">
+                        <div class="category-image">
+                            <a href="{% url 'ecommerce:item_list' %}?category={{ subcategory.id }}">
+                                <img src="{{ subcategory.get_image_url }}" alt="{{ subcategory.name }}">
+                            </a>
+                        </div>
+                        <h2 class="">{{ subcategory.name }}</h2>
+                    </div>
+                {% endfor %}
+            {% else %}
+                {% for category in categories %}
+                    <div class="category-item aitem ">
+                        <div class="category-image">
+                            <a href="{% url 'ecommerce:item_list' %}?category={{ category.id }}">
+                                <img src="{{ category.get_image_url }}" alt="{{ category.name }}">
+                            </a>
+                        </div>
+                        <h2 class="uup">{{ category.name }}</h2>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% endif %}
+    <!-- Items Display -->
+    {% if selected_category %}
+        <section class="content">
+            <div class="products">
+                {% for item in items %}
+                    <div class="product aitem">
+                        <div class="info-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <div class="popup-box">
+                                <p>{{ item.description }}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{% url 'ecommerce:item_detail' item.id %}">
+                                <img src="{{ item.get_image_url }}" alt="{{ item.description }}">
+                            </a>
+                            <br>
+                            <a href="{% url 'ecommerce:item_detail' item.id %}">
+                                <h3>{{ item.description }}</h3>
+                            </a>
+                            <br>
+                        </div>
+                        <div class="product-actions">
+                            <form method="post" action="{% url 'ecommerce:add_to_cart' item.id %}">
+                                {% csrf_token %}
+                                <input type="number" name="quantity" min="1" value="1" class="quantity-input">
+                                <button type="submit" class="add-to-cart-btn dowwn b btn btn-primary">Add</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div id="pagination" class="pagination"></div>
+        </section>
+
+
+        </center>
+    {% endif %}
+</main>
+<br><br>
+<div class="total-price-container openbtn1">
+    <span class="total-price">Total:</span>
+    <div id="total-price" class="total-price-box">${{ total_price_with_hst|floatformat:2 }}</div>
+</div>
+<footer>
+    <div class="footer-content">
+        <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" alt="Footer Image" class="footer-image">
+        <p>&copy; <span id="current-year"></span> Mekco Supply Inc. All rights reserved.</p>
+    </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const itemsPerPage = 100;
+    const items = document.querySelectorAll('.product.aitem');
+    const totalItems = items.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    let currentPage = 1;
+
+    function showPage(page) {
+        items.forEach((item, index) => {
+            item.style.display = 'none';
+            if (index >= (page - 1) * itemsPerPage && index < page * itemsPerPage) {
+                item.style.display = 'block';
+            }
+        });
+
+        updatePagination(page);
+        scrollToTop();
+    }
+
+    function updatePagination(page) {
+        const paginationDiv = document.getElementById('pagination');
+        paginationDiv.innerHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageLink = document.createElement('a');
+            pageLink.href = '#';
+            pageLink.textContent = i;
+            pageLink.classList.add('page-link');
+
+            pageLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                currentPage = i;
+                showPage(currentPage);
+            });
+
+            if (i === page) {
+                pageLink.classList.add('active');
+            }
+
+            paginationDiv.appendChild(pageLink);
+        }
+    }
+
+    function scrollToTop() {
+        window.scrollTo(0, 0);
+    }
+
+    showPage(currentPage);
+
+</script>
+
+<script>
+    function applyQuantityChange(cartItemId) {
+        const quantityInput = document.querySelector(`input[name="quantity_${cartItemId}"]`);
+        const quantity = quantityInput.value;
+        if (quantity < 1) {
+            alert('Quantity must be at least 1.');
+            return;
+        }
+
+    }
+
+    function openTab() {
+    }
+</script>
+<script>
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
+    let placeholderText = "Type to search...";
+    let placeholderIndex = 0;
+
+    function typePlaceholder() {
+        if (placeholderIndex < placeholderText.length) {
+            searchInput.placeholder += placeholderText.charAt(placeholderIndex);
+            placeholderIndex++;
+            setTimeout(typePlaceholder, 100);
+        }
+    }
+
+    searchInput.placeholder = "";
+    typePlaceholder();
+
+    searchInput.addEventListener("focus", function () {
+        searchInput.style.transition = "all 0.4s ease";
+        searchInput.style.boxShadow = "0px 0px 12px rgba(0, 150, 136, 0.5)";
+        searchInput.style.borderColor = "#007bff";
+    });
+
+    searchInput.addEventListener("blur", function () {
+        searchInput.style.boxShadow = "none";
+        searchInput.style.borderColor = "#ddd";
+    });
+
+    searchButton.addEventListener("mouseover", function () {
+        searchButton.style.backgroundColor = "#0056b3";
+        searchButton.style.transform = "scale(1.05)";
+    });
+
+    searchButton.addEventListener("mouseleave", function () {
+        searchButton.style.backgroundColor = "#0069d9";
+        searchButton.style.transform = "scale(1)";
+    });
+
+    searchButton.addEventListener("mousedown", function () {
+        searchButton.style.transform = "scale(0.9)";
+    });
+
+    searchButton.addEventListener("mouseup", function () {
+        searchButton.style.transform = "scale(1)";
+    });
+</script>
+<script>
+    document.getElementById("current-year").textContent = new Date().getFullYear();
+
+    function loadSubcategories(categoryId) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('category', categoryId);
+        window.location.href = url.toString();
+    }
+</script>
+</body>
+</html>

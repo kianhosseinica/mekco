@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Items in Quote</title>
+</head>
+<body>
+    <h1>Edit Items in Quote</h1>
+    
+    <!-- Search Form -->
+    <form method="get" action="">
+        <label for="search_query">Search Items:</label>
+        <input type="text" id="search_query" name="query" placeholder="Enter SKU or Description">
+        <button type="submit" name="search">Search</button>
+    </form>
+
+    <!-- Add to List Form (from search results) -->
+    {% if items %}
+    <form method="post" action="">
+        {% csrf_token %}
+        <table>
+            <tr>
+                <th>Select</th>
+                <th>Description</th>
+                <th>SKU</th>
+                <th>Default Cost</th>
+                <th>Quantity</th>
+                <th>Price</th>
+            </tr>
+            {% for item in items %}
+            <tr>
+                <td><input type="checkbox" name="item_ids" value="{{ item.id }}"></td>
+                <td>{{ item.description }}</td>
+                <td>{{ item.manufacturer_sku }}</td>
+                <td>{{ item.default_cost | floatformat:2 }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ item.id }}" value="1" min="1">
+                </td>
+                <td>
+                    <input type="number" name="price_{{ item.id }}" step="0.01" value="{{ item.price_default | floatformat:2 }}">
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <button type="submit" name="add_to_list">Add Selected Items to List</button>
+    </form>
+    {% endif %}
+
+    <!-- Edit List Form (for session items) -->
+    <h2>Items to be Added to Quote</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        <table>
+            {% if session_items %}
+            <tr>
+                <th>Description</th>
+                <th>SKU</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Action</th>
+            </tr>
+            {% for item in session_items %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td>{{ item.manufacturer_sku }}</td>
+                <td>
+                    <input type="number" name="quantity_{{ item.item_id }}" value="{{ item.quantity }}" min="1">
+                </td>
+                <td>
+                    <input type="number" name="price_{{ item.item_id }}" step="0.01" value="{{ item.price }}">
+                </td>
+                <td>
+                    <button type="submit" name="update_item" value="{{ item.item_id }}">Update</button>
+                    <button type="submit" name="remove_from_list" value="{{ item.item_id }}">Remove</button>
+                </td>
+            </tr>
+            {% endfor %}
+            </table>
+            <button type="submit" name="submit_all">Apply All Changes</button>
+            {% else %}
+            <tr><td colspan="5">No items added yet.</td></tr>
+            {% endif %}
+        </table>
+    </form>
+
+    <a href="{% url 'edit_quote' quote.id %}">Back to Quote</a>
+</body>
+</html>

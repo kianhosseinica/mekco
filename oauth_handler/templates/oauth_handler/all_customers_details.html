@@ -1,0 +1,34 @@
+<!-- templates/oauth_handler/all_customers_details.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Customers Details</title>
+</head>
+<body>
+    <h1>All Customers Details</h1>
+    {% if customers %}
+        <ul>
+            {% for customer in customers %}
+            <li>
+                <strong>{{ customer.firstName }} {{ customer.lastName }}</strong> - {{ customer.company }}
+                <div>Company Reg. No.: {{ customer.companyRegistrationNumber|default:"N/A" }}</div>
+                <div>VAT No.: {{ customer.vatNumber|default:"N/A" }}</div>
+                <div>Created On: {{ customer.createTime|date:"Y-m-d H:i:s" }}</div>
+                <div>Last Updated: {{ customer.timeStamp|date:"Y-m-d H:i:s" }}</div>
+                <div>Title: {{ customer.title|default:"N/A" }}</div>
+                <div>Email: {% if customer.Contact.Emails.ContactEmail %}{{ customer.Contact.Emails.ContactEmail.0.address }}{% else %}No Email{% endif %}</div>
+                <div>Phone: {% if customer.Contact.Phones.ContactPhone %}{{ customer.Contact.Phones.ContactPhone.0.number }}{% else %}No Phone{% endif %}</div>
+                <div>Address: {% if customer.Contact.Addresses.ContactAddress %}
+                    {{ customer.Contact.Addresses.ContactAddress.0.address1 }} {{ customer.Contact.Addresses.ContactAddress.0.city }}, {{ customer.Contact.Addresses.ContactAddress.0.state }}
+                {% else %}
+                    No Address Available
+                {% endif %}</div>
+            </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No customers found.</p>
+    {% endif %}
+</body>
+</html>

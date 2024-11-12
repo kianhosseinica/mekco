@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Quote</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Outer border for the quote container */
+        .quote-container {
+            border: 2px solid #333; /* Dark border */
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-text {
+            text-align: right;
+        }
+        .bordered-table th, .bordered-table td {
+            border: 1px solid #ddd;
+        }
+        .total-row td {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <!-- Quote Container with Border -->
+        <div class="quote-container">
+            <!-- Header Section -->
+            <div class="row">
+                <div class="col-md-6">
+                    <h1>MEKCO Supply</h1>
+                </div>
+                <div class="col-md-6 header-text">
+                    <p>Quote Number: {{ quote.quote_number }}</p>
+                    <p>Date: Oct 28, 2024</p>
+                    <p>Revision: 1</p>
+                </div>
+            </div>
+            <hr>
+            <h2>Quote Items</h2>
+            <!-- Quote Items Table -->
+            <table class="table mt-4 bordered-table">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>items</th>
+                        <th>Item & Description</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody id="quote-items">
+                    {% for item in quote.items.all %}
+                    <tr data-price="{{ item.price }}" data-quantity="{{ item.quantity }}">
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.item.description }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.price }}</td>
+                        <td class="item-total">${{ item.quantity|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No items in this quote.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Summary Section -->
+            <div class="row justify-content-end">
+                <div class="col-md-4">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <td class="text-right">Sub Total:</td>
+                                <td id="sub-total">$0.00</td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">GST/HST (13%):</td>
+                                <td id="tax-amount">$0.00</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td class="text-right">Total:</td>
+                                <td id="total-amount">$0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Button to Add New Items -->
+
+        </div> <!-- End of Quote Container -->
+    </div>
+
+    <div class="text-right">
+                <a href="{% url 'add_quote_item' quote.id %}" class="btn btn-primary">Add Item</a>
+    </div>
+
+    <!-- JavaScript to calculate totals -->
+    <script>
+        function calculateTotals() {
+            const rows = document.querySelectorAll("#quote-items tr[data-price]");
+            let subTotal = 0;
+
+            rows.forEach(row => {
+                const price = parseFloat(row.getAttribute("data-price")) || 0;
+                const quantity = parseFloat(row.getAttribute("data-quantity")) || 0;
+                const total = price * quantity;
+
+                // Set the calculated total for each item in the DOM
+                row.querySelector(".item-total").textContent = `$${total.toFixed(2)}`;
+
+                // Add to subtotal
+                subTotal += total;
+            });
+
+            // Calculate tax and total amounts
+            const taxRate = 0.13;
+            const taxAmount = subTotal * taxRate;
+            const totalAmount = subTotal + taxAmount;
+
+            // Update the DOM elements for subtotal, tax, and total
+            document.getElementById("sub-total").textContent = `$${subTotal.toFixed(2)}`;
+            document.getElementById("tax-amount").textContent = `$${taxAmount.toFixed(2)}`;
+            document.getElementById("total-amount").textContent = `$${totalAmount.toFixed(2)}`;
+        }
+
+        // Run the calculation function when the page loads
+        window.addEventListener("DOMContentLoaded", calculateTotals);
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!-- templates/oauth_handler/customers_js.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer List</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('/path-to-your-view/')
+                .then(response => response.json())
+                .then(data => {
+                    const customers = data.Customer || [];
+                    let listHtml = customers.map(customer => {
+                        return `<li>${customer.firstName} ${customer.lastName} - ${customer.Contact.Emails.ContactEmail[0].address}</li>`;
+                    }).join('');
+                    document.getElementById('customerList').innerHTML = listHtml;
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        });
+    </script>
+</head>
+<body>
+    <h1>Customer List</h1>
+    <ul id="customerList"></ul>
+</body>
+</html>

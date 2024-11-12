@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Receipt - Mekco Supply Inc.</title>
+    <style>
+        @page { margin: 0px; }
+        body {
+            font: normal 10pt 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .receiptHeader {
+            text-align: center;
+            color: #000;
+            margin-top: 20px;
+        }
+        .receiptHeader img {
+            margin: 8px 0 4px;
+        }
+        .receiptShopContact {
+            margin: 0;
+            font-size: 14px;
+            color: #000;
+        }
+        h1 {
+            margin: 20px 0;
+            font-size: 18pt;
+            color: #000;
+        }
+        h2, h3 {
+            color: #000;
+            margin-top: 20px;
+        }
+        p {
+            color: #555;
+        }
+        ul {
+            padding-left: 20px;
+            color: #000;
+        }
+        ul li {
+            margin-bottom: 10px;
+        }
+        .total {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-top: 20px;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="receiptHeader">
+        <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" width="225px" alt="Mekco Supply">
+        <p class="receiptShopContact">
+            PLUMBING . HYDRONICS . HVAC<br>
+            110 West Beaver Creek Rd. Unit 16<br>
+            Richmond Hill, ON L4B 1J9<br>
+            905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #000; text-decoration: none;">https://www.mekcosupply.com/</a><br>
+        </p>
+    </div>
+
+    <h1>Order Receipt</h1>
+    <p>Thank you for your order. Here are the details:</p>
+
+    <h2>Order #{{ order.id }}</h2>
+    <p>Date: {{ order.created_at }}</p>
+    <p>Customer: {{ order.customer.username }}</p>
+
+    <h3>Items:</h3>
+    <ul>
+        {% for cart_item in order.cart.cartitem_set.all %}
+        <li>{{ cart_item.item.item.description }} - Quantity: {{ cart_item.quantity }} - Unit Price: ${{ cart_item.item.item.price_default }} - Total: ${{ cart_item.quantity|multiply:cart_item.item.item.price_default|floatformat:2 }}</li>
+        {% endfor %}
+    </ul>
+
+    <div class="total">
+        Subtotal: ${{ total_price|floatformat:2 }}
+    </div>
+    <div class="total">
+        Total Discounts: -${{ total_discount|floatformat:2 }}
+    </div>
+    <div class="total">
+        HST (13%): ${{ hst|floatformat:2 }}
+    </div>
+    <div class="total">
+        Total with HST: ${{ total_price_with_hst|floatformat:2 }}
+    </div>
+
+    <p>Delivery Option: {{ order.delivery_option }}</p>
+
+    {% if order.shipping_address %}
+    <p>Shipping Address: {{ order.shipping_address }}</p>
+    {% endif %}
+</body>
+</html>

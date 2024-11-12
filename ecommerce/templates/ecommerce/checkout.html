@@ -1,0 +1,869 @@
+{% load custom_filters %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Mekco Supply Inc.</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .receiptHeader {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #1e3a8a;
+            padding: 25px;
+            color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .receiptShopContact {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .receiptShopContact a {
+            color: #ffcc00;
+            text-decoration: none;
+        }
+
+        .receiptShopContact a:hover {
+            text-decoration: underline;
+        }
+
+        table.salelines {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table.salelines th, table.salelines td {
+            padding: 12px;
+            border-bottom: 1px solid #e3e6f0;
+            text-align: left;
+        }
+
+        table.salelines th {
+            background-color: #f4f7fc;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+
+        table.salelines td {
+            font-size: 14px;
+        }
+
+        table.salelines th.quantity, table.salelines td.quantity {
+            text-align: center;
+        }
+
+        table.salelines th.amount, table.salelines td.amount {
+            text-align: right;
+        }
+
+        .total {
+            font-weight: bold;
+            text-align: right;
+            margin-top: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            font-size: 16px;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            border-color: #1e3a8a;
+            outline: none;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            font-size: 16px;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-primary:hover, .btn-success:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-primary:focus, .btn-success:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+        }
+
+        .note {
+            color: #d9534f;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .thankyou {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .messages {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .alert {
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        #timer {
+            font-size: 18px;
+            font-weight: 500;
+            color: #ff6f61;
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .receiptHeader img {
+            width: 220px;
+            margin-bottom: 15px;
+        }
+
+        .receiptHeader h1 {
+            font-size: 26px;
+            color: white;
+            font-weight: 700;
+        }
+
+        .thankyou {
+            font-size: 20px;
+            color: #555;
+        }
+
+        .alert {
+            padding: 24px 32px 12px;
+            font-size: 20px;
+            border-radius: 12px;
+            position: fixed;
+            top: 25px;
+            left: 25px;
+            background: #81c784;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+            opacity: 1;
+            transition: opacity 0.7s ease, transform 0.7s ease, left 0.7s ease;
+            z-index: 1000;
+        }
+
+        .alert.alert-hidden {
+            opacity: 0;
+            transform: scale(0.9);
+            left: 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            border-radius: 0 0 8px 8px;
+            margin-top: 12px;
+            background: linear-gradient(to right, #a5d6a7, #c8e6c9);
+            animation: progressGradient 6s linear forwards;
+        }
+
+        @keyframes progressGradient {
+            from {
+                background: linear-gradient(to right, #a5d6a7, #c8e6c9);
+            }
+            to {
+                background: linear-gradient(to right, #e8f5e9, #f1f8e9);
+                width: 0;
+            }
+        }
+
+        table {
+            margin: 20px;
+            width: calc(100% - 40px);
+            border-collapse: collapse;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        table th, table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th.description {
+            width: 40%;
+            color: #007bff;
+        }
+
+        th.quantity, th.amount, th.original-price, th.discount-price, th.remove {
+            text-align: right;
+            color: #007bff;
+        }
+
+        td.amount, td.original-price, td.discount-price {
+            text-align: right;
+            color: #000;
+        }
+
+        table.salelines th {
+            border-bottom: 1px solid #007bff;
+        }
+
+        table.totals th, table.totals td {
+            border: none;
+            font-weight: bold;
+        }
+
+        table.salelines tbody tr {
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        table.salelines tbody tr:hover {
+            transform: scale(1.01);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+
+        @media (max-width: 1024px) {
+            body {
+                font-size: 16px;
+            }
+
+            .receiptHeader {
+                padding: 20px;
+            }
+
+            .receiptHeader h1 {
+                font-size: 24px;
+            }
+
+            .receiptShopContact {
+                font-size: 13px;
+            }
+
+            table.salelines th, table.salelines td {
+                padding: 10px;
+            }
+
+            .total {
+                font-size: 15px;
+            }
+
+            .form-group label, .form-group input, .form-group select {
+                font-size: 15px;
+            }
+
+            .btn {
+                font-size: 15px;
+                padding: 12px 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+
+            .receiptHeader {
+                padding: 15px;
+            }
+
+            .receiptHeader h1 {
+                font-size: 22px;
+            }
+
+            .receiptShopContact {
+                font-size: 12px;
+            }
+
+            table.salelines th, table.salelines td {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .thankyou {
+                font-size: 18px;
+            }
+
+            .total {
+                font-size: 14px;
+            }
+
+            .form-group label, .form-group input, .form-group select {
+                font-size: 14px;
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            .alert {
+                font-size: 16px;
+                padding: 20px 25px;
+                top: 15px;
+                left: 10px;
+            }
+
+            .alert .progress-bar {
+                height: 5px;
+            }
+
+            #timer {
+                font-size: 16px;
+            }
+
+            table {
+                width: 100%;
+                margin: 10px 0;
+                border-radius: 5px;
+            }
+
+            .receiptHeader img {
+                width: 180px;
+            }
+
+            table.salelines th, table.salelines td {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                font-size: 15px;
+            }
+
+            .receiptHeader {
+                padding: 18px;
+            }
+
+            .receiptHeader h1 {
+                font-size: 22px;
+            }
+
+            .receiptShopContact {
+                font-size: 13px;
+            }
+
+            table.salelines th, table.salelines td {
+                padding: 10px;
+            }
+
+            .total {
+                font-size: 14px;
+            }
+
+            .form-group label, .form-group input, .form-group select {
+                font-size: 14px;
+            }
+
+            .btn {
+                font-size: 14px;
+                padding: 12px 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 13px;
+            }
+
+            .receiptHeader {
+                padding: 12px;
+            }
+
+            .receiptHeader h1 {
+                font-size: 20px;
+            }
+
+            .receiptShopContact {
+                font-size: 11px;
+            }
+
+            table.salelines th, table.salelines td {
+                padding: 8px;
+                font-size: 12px;
+            }
+
+            .thankyou {
+                font-size: 16px;
+            }
+
+            .total {
+                font-size: 13px;
+            }
+
+            .form-group label, .form-group input, .form-group select {
+                font-size: 13px;
+            }
+
+            .btn {
+                font-size: 13px;
+                padding: 10px 18px;
+            }
+
+            .alert {
+                font-size: 15px;
+                padding: 16px 20px;
+                top: 10px;
+                left: 8px;
+            }
+
+            .alert .progress-bar {
+                height: 4px;
+            }
+
+            #timer {
+                font-size: 15px;
+            }
+
+            table {
+                width: 100%;
+                margin: 8px 0;
+                border-radius: 5px;
+            }
+
+            .receiptHeader img {
+                width: 160px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                font-size: 10px;
+            }
+
+            .receiptHeader {
+                padding: 10px;
+            }
+
+            .receiptHeader h1 {
+                font-size: 18px;
+            }
+
+            .receiptShopContact {
+                font-size: 10px;
+            }
+
+            table.salelines th, table.salelines td {
+                padding: 6px;
+                font-size: 10px;
+            }
+
+            .thankyou {
+                font-size: 15px;
+            }
+
+            .total {
+                font-size: 12px;
+            }
+
+            .form-group label, .form-group input, .form-group select {
+                font-size: 12px;
+            }
+
+            .btn {
+                font-size: 10px;
+                padding: 8px 16px;
+            }
+
+            .alert {
+                font-size: 12px;
+                padding: 14px 18px;
+                top: 8px;
+                left: 5px;
+            }
+
+            .alert .progress-bar {
+                height: 3px;
+            }
+
+            #timer {
+                font-size: 14px;
+            }
+
+            table {
+                width: 100%;
+                margin: 5px 0;
+                border-radius: 4px;
+            }
+
+            .receiptHeader img {
+                width: 140px;
+            }
+        }
+
+    </style>
+    <script src="{% static 'js/shipping.js' %}"></script>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const deliveryOption = document.getElementById("id_delivery_option");
+    const shippingForm = document.getElementById("shipping-form");
+    const pickupForm = document.getElementById("pickup-form");
+    const carrier = document.getElementById("carrier");
+    const deliveryOptionField = document.getElementById("deliveryOptionField");
+
+    // Function to toggle between forms based on the delivery option
+    function toggleForms() {
+        const isShipping = deliveryOption.value === "shipping";
+        shippingForm.style.display = isShipping ? "block" : "none";
+        pickupForm.style.display = isShipping ? "none" : "block";
+        deliveryOptionField.value = deliveryOption.value; // Update hidden field
+    }
+
+    toggleForms();
+    deliveryOption.addEventListener("change", toggleForms);
+
+    // Event listener for "Get Shipping Rate" button
+    document.getElementById("get-shipping-rate").addEventListener("click", function () {
+        submitShippingForm("shipping");
+    });
+
+    // Event listener for "Confirm Delivery Method" button (pickup option)
+    document.getElementById("confirm-pickup").addEventListener("click", function () {
+        submitShippingForm("pickup");
+    });
+
+    function submitShippingForm(option) {
+        const formData = new FormData(document.getElementById("shippingForm"));
+        formData.set("delivery_option", option);
+
+        fetch("{% url 'ecommerce:get_shipping_rate' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Accept": "text/html"
+            },
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => {
+            document.body.innerHTML = data;
+        })
+        .catch(error => {
+            console.error("Error confirming delivery method:", error);
+            alert("There was an error confirming the delivery method.");
+        });
+    }
+});
+
+</script>
+
+
+    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+
+</head>
+<body>
+
+
+<div class="receiptHeader">
+    <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" width="225px" alt="Mekco Supply">
+    <p class="receiptShopContact">
+        PLUMBING . HYDRONICS . HVAC<br>
+        110 West Beaver Creek Rd. Unit 16<br>
+        Richmond Hill, ON L4B 1J9<br>
+        905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #fff;">https://www.mekcosupply.com/</a><br>
+    </p>
+</div>
+
+<h1>Checkout</h1>
+
+<div id="timer"></div>  <!-- Timer display -->
+
+<h2>Order Summary</h2>
+<table class="salelines">
+    <thead>
+    <tr>
+        <th class="description">Item</th>
+        <th class="quantity">Quantity</th>
+        <th class="original-price">Original Price</th>
+        <th class="discount-price">Discounted Price</th>
+        <th class="amount">Total Price</th>
+        <th class="discount-price">Discount</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in cart_items %}
+        <tr>
+            <td class="description">{{ item.item.description }} - {{ item.item.manufacturer_sku }}</td>
+            <td class="quantity">{{ item.quantity }}</td>
+            <td class="original-price">${{ item.item.price_default }}</td>
+            <td class="discount-price">${{ item.price }}</td>
+            <td class="amount">${{ item.price|multiply:item.quantity|floatformat:2 }}</td>
+            <td class="discount-price">
+                -${{ item.item.price_default|subtract:item.price|multiply:item.quantity|floatformat:2 }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<div class="messages">
+    <div class="alert">message success
+        <div class="progress-bar"></div>
+    </div>
+</div>
+
+<div class="messages">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            <div class="progress-bar"></div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+
+<table class="totals">
+    <tr>
+        <td class="total-label">Subtotal</td>
+        <td class="amount">${{ subtotal|floatformat:2 }}</td>
+    </tr>
+    <tr>
+        <td class="total-label">Total Discounts</td>
+        <td class="amount">
+            {% if total_discount > 0 %}
+                -${{ total_discount|floatformat:2 }}
+            {% else %}
+                $0.00
+            {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td class="total-label">HST (13%)</td>
+        <td class="amount">${{ hst|floatformat:2 }}</td>
+    </tr>
+    <tr>
+        <td class="total-label">Total with HST</td>
+        <td class="amount">${{ total_with_hst|floatformat:2 }}</td>
+    </tr>
+    <tr>
+        <td class="total-label">Total with HST + Shipping</td>
+        <td class="amount">${{ total_with_hst_and_shipping|floatformat:2 }}</td>
+    </tr>
+    {% if shipping_service_name %}
+    <tr>
+        <td class="total-label">Selected Shipping Service</td>
+        <td class="amount">{{ shipping_service_name }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+
+
+<br>
+<form method="post" action="{% url 'ecommerce:get_shipping_rate' %}" id="shippingForm">
+    {% csrf_token %}
+    <input type="hidden" name="get_shipping_rate" value="true">
+    <input type="hidden" id="deliveryOptionField" name="delivery_option" value="">
+
+    <div class="form-group">
+        <label for="id_delivery_option">Choose Delivery Option:</label>
+        <select name="delivery_option" id="id_delivery_option">
+            <option value="pickup" {% if request.session.selected_delivery_option == "pickup" %}selected{% endif %}>Pick up from store</option>
+            <option value="shipping" {% if request.session.selected_delivery_option == "shipping" %}selected{% endif %}>Shipping to address</option>
+        </select>
+    </div>
+
+    <!-- Shipping Address Fields, initially hidden -->
+    <div id="shipping-form" style="display: none;">
+        <br>
+        <div class="form-group">
+            <label for="id_street">Street Address:</label>
+            <input type="text" name="street" id="id_street" value="{{ shipping_data.street }}">
+        </div>
+        <div class="form-group">
+            <label for="id_city">City:</label>
+            <input type="text" name="city" id="id_city" value="{{ shipping_data.city }}">
+        </div>
+        <div class="form-group">
+            <label for="id_province">Province:</label>
+            <input type="text" name="province" id="id_province" value="{{ shipping_data.province }}">
+        </div>
+        <div class="form-group">
+            <label for="id_postal_code">Postal Code:</label>
+            <input type="text" name="postal_code" id="id_postal_code" value="{{ shipping_data.postal_code }}">
+        </div>
+        <div class="form-group">
+            <label for="id_country">Country:</label>
+            <input type="text" name="country" id="id_country" value="{{ shipping_data.country }}">
+        </div>
+
+        <!-- Carrier Selection -->
+        <div class="form-group">
+            <label for="carrier">Select Carrier:</label>
+            <select id="carrier" name="carrier" required>
+                <option value="ups" {% if shipping_data.carrier == "ups" %}selected{% endif %}>UPS</option>
+                <option value="fedex" {% if shipping_data.carrier == "fedex" %}selected{% endif %}>FedEx</option>
+                <option value="canadapost" {% if shipping_data.carrier == "canadapost" %}selected{% endif %}>Canada Post</option>
+            </select>
+        </div>
+
+        <button type="button" id="get-shipping-rate" class="btn btn-primary">Get Shipping Rate</button>
+    </div>
+
+    <!-- Pickup Confirmation Button, initially hidden -->
+    <div id="pickup-form" style="display: none;">
+        <br>
+        <button type="button" id="confirm-pickup" class="btn btn-primary">Confirm Delivery Method</button>
+    </div>
+</form>
+
+<script>
+    function toggleForms() {
+        var deliveryOption = document.getElementById("id_delivery_option").value;
+        var shippingForm = document.getElementById("shipping-form");
+        var pickupForm = document.getElementById("pickup-form");
+
+        if (deliveryOption === "shipping") {
+            shippingForm.style.display = "block";
+            pickupForm.style.display = "none";
+        } else {
+            shippingForm.style.display = "none";
+            pickupForm.style.display = "block";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", toggleForms);
+</script>
+
+
+{% if payment_success %}
+        <!-- Order Placement Form shown only if payment was successful -->
+        <form action="" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="delivery_option" value="{{ shipping_data.delivery_option }}">
+            <input type="hidden" name="street" value="{{ shipping_data.street }}">
+            <input type="hidden" name="city" value="{{ shipping_data.city }}">
+            <input type="hidden" name="province" value="{{ shipping_data.province }}">
+            <input type="hidden" name="postal_code" value="{{ shipping_data.postal_code }}">
+            <input type="hidden" name="country" value="{{ shipping_data.country }}">
+            <input type="hidden" name="carrier" value="{{ shipping_data.carrier }}">
+            <button type="submit" class="btn btn-success w-100">Place Order</button>
+        </form>
+    {% else %}
+    <br>
+        <!-- PayPal Payment Button if Payment is Not Yet Made -->
+        <form action="{% url 'ecommerce:paypal_payment' %}" method="POST">
+            {% csrf_token %}
+
+            <button type="submit" class="btn btn-primary w-100">First make the payment to complete the order</button>
+        </form>
+        <p class="note" style="color: red;">Please complete your payment with PayPal before placing your order.</p>
+    {% endif %}
+
+
+<p class="note">{{ note }}</p>
+
+<div class="thankyou">
+    <p>Thank you for shopping with Mekco Supply!</p>
+</div>
+
+</body>
+</html>
+
+<div id="timer" style="text-align: center; font-weight: bold; margin-top: 20px;"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let timeLeft = {{ timeout }};  // Use the timeout value from the context
+
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById("timer").textContent = `Time left to complete checkout: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("Your checkout session has expired. Redirecting to the checkout page.");
+                window.location.href = "{% url 'ecommerce:cart_detail' %}";  // Adjust to the appropriate URL if needed
+            }
+
+            timeLeft--;
+        }
+
+        const timerInterval = setInterval(updateTimer, 1000);
+    });
+</script>
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const alertBox = document.querySelector(".alert");
+        if (alertBox) {
+            setTimeout(() => {
+                alertBox.classList.add("alert-hidden");
+            }, 6000);
+        }
+    });
+</script>

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Customer List</title>
+</head>
+<body>
+    <h1>Customer List</h1>
+    <ul>
+        {% for customer in customers %}
+            <li>{{ customer.firstName }} {{ customer.lastName }} - Email: {{ customer.email }}</li>
+        {% empty %}
+            <li>No customers found.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

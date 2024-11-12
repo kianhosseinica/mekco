@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assign Customer Type</title>
+</head>
+<body>
+    <h1>Assign Customer Type</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Assign</button>
+    </form>
+</body>
+</html>

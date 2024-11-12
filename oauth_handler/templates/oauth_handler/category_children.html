@@ -1,0 +1,10 @@
+{% for category in categories %}
+    <li>
+        {{ category.name }}
+        {% if category.children %}
+            <ul>
+                {% include "oauth_handler/category_children.html" with categories=category.children %}
+            </ul>
+        {% endif %}
+    </li>
+{% endfor %}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fffaf0;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: #ffefd5;
+            padding: 30px 50px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            color: #d2691e;
+            text-align: center;
+            border-bottom: 2px solid #d2691e;
+            padding-bottom: 10px;
+        }
+        form {
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Lightspeed Integration</h1>
+        <form method="POST" action="{% url 'start_refresh_and_redirect' %}">
+            {% csrf_token %}
+            <input type="hidden" name="redirect_url" value="{% url 'update_multiple_items' %}">
+            <button type="submit">Add Inventory By Sku </button>
+        </form>
+        <form method="POST" action="{% url 'start_refresh_and_redirect' %}">
+            {% csrf_token %}
+            <input type="hidden" name="redirect_url" value="{% url 'credit_account_details' %}">
+            <button type="submit">Credit Report</button>
+        </form>
+        <form method="POST" action="{% url 'list_items' %}">
+            {% csrf_token %}
+            <input type="hidden" name="list_items" value="{% url 'list_items' %}">
+            <button type="submit">our items database</button>
+        </form>
+        <form method="POST" action="{% url 'list-reorder-items' %}">
+            {% csrf_token %}
+            <input type="hidden" name="list-reorder-items" value="{% url 'list-reorder-items' %}">
+            <button type="submit">items wait for reorder</button>
+        </form>
+        <form method="POST" action="{% url 'list_quotes' %}">
+            {% csrf_token %}
+            <input type="hidden" name="quotes" value="{% url 'list_quotes' %}">
+            <button type="submit">quotes</button>
+        </form>
+        <form method="POST" action="{% url 'ecommerce:admin_order_list' %}">
+            {% csrf_token %}
+            <input type="hidden" name="order list" value="{% url 'ecommerce:admin_order_list' %}">
+            <button type="submit">order list</button>
+        </form>
+        <form method="POST" action="{% url 'ecommerce:orders_with_returns' %}">
+            {% csrf_token %}
+            <input type="hidden" name="orders_with_returns" value="{% url 'ecommerce:orders_with_returns' %}">
+            <button type="submit">orders_with_returns</button>
+        </form>
+
+
+    </div>
+</body>
+</html>
