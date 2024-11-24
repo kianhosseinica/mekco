@@ -42,8 +42,7 @@ from django.urls import path
 from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib import admin
-from .models import Order
-from .views import custom_order_list_view, custom_order_detail_view
+
 
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', 'customer', 'status', 'created_at', 'updated_at', 'view_order')
@@ -55,8 +54,6 @@ class OrderAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('orders/', self.admin_site.admin_view(custom_order_list_view), name='admin_order_list'),
-            path('orders/<int:order_id>/', self.admin_site.admin_view(custom_order_detail_view), name='admin_order_detail'),
         ]
         return custom_urls + urls
 

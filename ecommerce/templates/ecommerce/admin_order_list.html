@@ -9,7 +9,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #fdf7f1; /* Soft, light background */
+            background-color: #fdf7f1;
             color: #333333;
         }
         h1 {
@@ -86,16 +86,11 @@
             color: #333333;
         }
         tr {
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition        : background-color 0.3s ease, transform 0.3s ease;
         }
         tr:hover {
             background-color: #ffe5b3;
             transform: scale(1.01);
-        }
-        tr.fade-in {
-            opacity: 0;
-            transform: translateY(10px);
-            animation: rowFadeIn 0.6s ease forwards;
         }
         a {
             color: #ba6122;
@@ -107,58 +102,16 @@
             color: #96491b;
             text-decoration: underline;
         }
-        button {
-            background-color: #ba6122;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-            margin-top: 10px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        button:hover {
-            background-color: #e3874a;
-            transform: translateY(-2px);
-        }
-        .action-select {
-            padding: 10px;
-            margin-top: 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #dcdcdc;
-            transition: box-shadow 0.3s ease;
-        }
-        .action-select:focus {
-            box-shadow: 0 0 6px rgba(210, 105, 30, 0.5);
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes rowFadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
 
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .tabs { flex-direction: column; align-items: stretch; }
             .tab { width: 100%; text-align: center; }
             h1 { font-size: 24px; }
-            button, .action-select { font-size: 14px; padding: 8px 15px; }
         }
         @media (max-width: 480px) {
             h1 { font-size: 20px; margin-bottom: 15px; }
             table, th, td { font-size: 12px; padding: 10px; }
-            button, .action-select { font-size: 12px; padding: 7px 10px; }
         }
     </style>
 </head>
@@ -175,53 +128,39 @@
     </div>
 
     <!-- Content for each tab -->
-    <form method="post">
-        {% csrf_token %}
-        {% for status_display, orders in orders_by_status.items %}
-            {% if orders %}
-            <section id="tab-{{ status_display }}" class="tab-content">
-                <h2>{{ status_display }}</h2>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Select</th>
-                                <th>Order Number</th>
-                                <th>Customer</th>
-                                <th>Status</th>
-                                <th>Created at</th>
-                                <th>Updated at</th>
-                                <th>Order Details</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for order in orders %}
-                            <tr class="fade-in">
-                                <td><input type="checkbox" name="selected_orders" value="{{ order.id }}"></td>
-                                <td>{{ order.order_number }}</td>
-                                <td>{{ order.customer.email }}</td>
-                                <td>{{ status_display }}</td>
-                                <td>{{ order.created_at }}</td>
-                                <td>{{ order.updated_at }}</td>
-                                <td><a href="{% url 'ecommerce:admin_order_detail' order.id %}">View</a></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-            {% endif %}
-        {% endfor %}
-
-        <label for="action-select">Choose an action:</label>
-        <select name="action" id="action-select" class="action-select">
-            <option value="" disabled selected>Select an action...</option>
-            <option value="delete">Delete selected orders</option>
-            <option value="mark_as_ready_for_pickup">Mark as Ready for Pickup</option>
-            <option value="mark_as_shipped">Mark as Shipped</option>
-        </select>
-        <button type="submit">Go</button>
-    </form>
+    {% for status_display, orders in orders_by_status.items %}
+        {% if orders %}
+        <section id="tab-{{ status_display }}" class="tab-content">
+            <h2>{{ status_display }}</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order Number</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Created at</th>
+                            <th>Updated at</th>
+                            <th>Order Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.customer.email }}</td>
+                            <td>{{ status_display }}</td>
+                            <td>{{ order.created_at }}</td>
+                            <td>{{ order.updated_at }}</td>
+                            <td><a href="{% url 'ecommerce:admin_order_detail' order.id %}">View</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+    {% endfor %}
 
     <script>
         function showTab(status) {
@@ -244,3 +183,4 @@
     </script>
 </body>
 </html>
+

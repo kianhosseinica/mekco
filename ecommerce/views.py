@@ -622,11 +622,12 @@ from django.contrib import messages
 from .models import Cart, Item, Order, OrderItem
 from .forms import OrderForm
 from decimal import Decimal
+from django.utils import timezone
 
 SHIPSTATION_API_URL = "https://ssapi.shipstation.com/shipments/getrates"
 SHIPSTATION_USERNAME = "b2806668fbd74c789adf93edf98cda43"
 SHIPSTATION_PASSWORD = "428f6402bbfb40f3afcbf6f06e4f0840"
-CHECKOUT_TIMEOUT = 100  # 5 minutes timeout
+CHECKOUT_TIMEOUT = 30  # 5 minutes timeout
 import threading
 
 # Store stock reductions in a global dictionary to restore them if checkout is not completed
@@ -766,26 +767,52 @@ def fetch_shipping_rates(payload):
 
 
 # Main function to handle the shipping rate request
+from django.shortcuts import redirect, render, get_object_or_404
+from django.contrib import messages
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from decimal import Decimal
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
 def get_shipping_rate(request):
     global flag
     flag = 0
 
     if request.method == 'POST' and 'get_shipping_rate' in request.POST:
+        # Store form data in session for both 'shipping' and 'pickup' options
+        delivery_option = request.POST.get('delivery_option')
+        carrier = request.POST.get('carrier', '')
+        postal_code = request.POST.get('postal_code', '')
+        country_name = request.POST.get('country', '')
+
+        # Save shipping data in session
         request.session['shipping_data'] = {
-            'carrier': request.POST.get('carrier', ''),
+            'carrier': carrier,
             'street': request.POST.get('street', ''),
             'city': request.POST.get('city', ''),
             'province': request.POST.get('province', ''),
-            'postal_code': request.POST.get('postal_code', ''),
-            'country': request.POST.get('country', ''),
-            'delivery_option': request.POST.get('delivery_option', '')
+            'postal_code': postal_code,
+            'country': country_name,
+            'delivery_option': delivery_option
         }
+
+        # If "Pickup" option is selected, skip the shipping rate API call and set shipping cost to zero
+        if delivery_option == "pickup":
+            request.session['shipping_cost'] = '0'
+            request.session['shipping_service_name'] = ''
+            request.session['shipping_rates'] = []  # No rates needed for pickup
+            request.session['show_shipping_rates'] = False
+            messages.success(request, "Pickup selected. No shipping rates required.")
+            return redirect('ecommerce:before_payment')  # Redirect to the final review page
 
         # Fetch the cart and its items
         cart = get_object_or_404(Cart, customer=request.user, completed=False)
         cart_items = cart.cartitem_set.all()
 
-        # Calculate total weight and dimensions for each item in cart
+        # Prepare items for packing
         items = [
             {
                 "name": item.item.description,
@@ -800,39 +827,21 @@ def get_shipping_rate(request):
             for item in cart_items
         ]
 
-        # Pack items into boxes and print which box each item is packed into
+        # Pack items into boxes
         packed_boxes, leftover_items = pack_items_in_boxes(items, BOXES)
 
-        # If there are leftover items that can't fit in any box, show an error
+        # If there are leftover items, show an error and redirect
         if leftover_items:
             messages.error(request, "Some items couldn't fit in any box size available.")
-            return redirect('ecommerce:checkout')
-
-        # Get delivery option and address inputs from the form
-        delivery_option = request.POST.get('delivery_option')
-        carrier = request.POST.get('carrier')
-        postal_code = request.POST.get('postal_code', '')
-        country_name = request.POST.get('country', '')
+            return redirect('ecommerce:cart_detail')
 
         # Map the full country name to ISO code
         country_codes = {"Canada": "CA", "United States": "US"}
         country_code = country_codes.get(country_name, "CA")  # Default to CA if not found
 
-        # Handle pickup option without API call
-        if delivery_option == "pickup":
-            print("Pickup option selected - no shipping rates required.")
-
-            request.session['shipping_rates'] = []
-            request.session['show_shipping_rates'] = False
-            request.session['shipping_data'] = {'delivery_option': 'pickup'}
-            messages.success(request, "Pickup selected. No shipping rates required.")
-            return redirect('ecommerce:checkout')
-
-        # Prepare API payload with multiple packages
+        # Prepare payload and fetch shipping rates
         shipping_request_payload = prepare_shipping_request_with_packages(packed_boxes, carrier, postal_code,
                                                                           country_code)
-
-        # Fetch shipping rates
         shipping_rates = fetch_shipping_rates(shipping_request_payload)
 
         # Store the fetched rates in the session
@@ -843,14 +852,24 @@ def get_shipping_rate(request):
         return render(request, 'ecommerce/get_shipping.html',
                       {'shipping_rates': shipping_rates, 'show_shipping_rates': True})
 
-    # If not a POST request, render the empty form for shipping rate selection
-    return render(request, 'ecommerce/get_shipping.html')
+    # Render the form with saved delivery option data if available
+    saved_delivery_option = request.session.get('shipping_data', {}).get('delivery_option', '')
+    return render(request, 'ecommerce/get_shipping.html', {'saved_delivery_option': saved_delivery_option})
 
+
+CHECKOUT_TIMEOUT = 200  # 5 minutes timeout
 
 @login_required
 def checkout(request):
+    remaining_time = get_remaining_time(request, CHECKOUT_TIMEOUT)
+
+    if remaining_time <= 0:
+        messages.error(request, "Your checkout session has timed out. Please try again.")
+        return redirect('ecommerce:cart_detail')
+
+
+
     print("Starting checkout process")
-    payment_success = request.session.get('payment_success', False)
     cart = get_object_or_404(Cart, customer=request.user, completed=False)
     cart_items = cart.cartitem_set.all()
     print("Cart items:", cart_items)
@@ -864,42 +883,6 @@ def checkout(request):
     print(f"Calculated totals: Subtotal={subtotal}, Total Discount={total_discount}, HST={hst}, Total with HST={total_with_hst}")
 
     # Retrieve shipping rates and cost
-    shipping_rates = request.session.get('shipping_rates', [])
-    show_shipping_rates = request.session.get('show_shipping_rates', False)
-    shipping_cost = Decimal(request.session.get('shipping_cost', '0'))
-    shipping_data = request.session.get('shipping_data', {})
-    print("Shipping data:", shipping_data, "Shipping cost:", shipping_cost)
-
-    # Check if user submitted a manual shipping cost
-    if request.method == 'POST' and 'x' in request.POST:
-        manual_shipping_cost = request.POST.get('manual_shipping_cost')
-        shipping_service_name = request.POST.get('shipping_service_name')  # Retrieve the service name
-
-        if manual_shipping_cost:
-            try:
-                shipping_cost = Decimal(manual_shipping_cost)
-                request.session['shipping_cost'] = str(shipping_cost)  # Store as string in session
-                request.session['shipping_service_name'] = shipping_service_name  # Store service name in session
-                messages.success(request,
-                                 f"Shipping cost updated to ${shipping_cost} with service {shipping_service_name}.")
-            except InvalidOperation:
-                messages.error(request, "Invalid shipping cost entered.")
-
-    total_with_hst_and_shipping = total_with_hst + shipping_cost
-    request.session['total_with_hst_and_shipping'] = str(total_with_hst_and_shipping)  # Save in session as string
-    print(f"Total with HST + Shipping: {total_with_hst_and_shipping}")
-    shipping_service_name = request.session.get('shipping_service_name', '')
-
-    print('flaaaag', flag)
-    if flag == 0:
-        print('ruuuun')
-        shipping_cost = 0
-
-    print(total_with_hst)
-    print(shipping_cost)
-
-
-
     # Use defaultdict to track total quantities by parent item
     parent_item_totals = defaultdict(int)
     reduced_stock = {}
@@ -968,8 +951,6 @@ def checkout(request):
         checkout_reservations[f'checkout_{cart.id}'] = reduced_stock
         return redirect('ecommerce:checkout')
 
-    print('1111111111111111111')
-
     # Define the timeout behavior for restoring stock
     def restore_stock_if_not_completed(cart_id, reduced_stock):
         print("\n--- CHECKOUT TIMEOUT ---")
@@ -1002,137 +983,470 @@ def checkout(request):
     timeout_timer = threading.Timer(CHECKOUT_TIMEOUT, restore_stock_if_not_completed,
                                     args=(cart.id, checkout_reservations.get(f'checkout_{cart.id}', {})))
     timeout_timer.start()
-    print('222222222222222222222222')
-    print("kir to kon", cart)
-    # Check if the request is POST to complete the order
-    if request.method == 'POST':
-        if not payment_success:
-            messages.error(request, "Please complete your payment with PayPal before placing your order.")
-            return redirect('ecommerce:checkout')  # Prevents further order processing without payment confirmation
 
-        timeout_timer.cancel()  # Cancel the timer as the checkout is proceeding
-        print(f"Checkout timer with ID {timeout_timer.ident} canceled")
-
-        # Log POST data for debugging
-        print("\n--- CHECKOUT POST DATA ---")
-        for key, value in request.POST.items():
-            print(f"{key}: {value}")
-
-        form = OrderForm(request.POST)
-
-        # Log initial field requirements
-        print("\n--- INITIAL FIELD REQUIREMENTS ---")
-        for field_name, field in form.fields.items():
-            print(f"{field_name}: required={field.required}")
-
-        # Check the delivery option to adjust form validation requirements
-        delivery_option = request.POST.get('delivery_option')
-        print(f"\nSelected delivery option: {delivery_option}")
-
-        if delivery_option == 'pickup':
-            form.fields['street'].required = False
-            form.fields['city'].required = False
-            form.fields['province'].required = False
-            form.fields['postal_code'].required = False
-            form.fields['country'].required = False
-
-            print("\n--- UPDATED FIELD REQUIREMENTS FOR PICKUP ---")
-            for field_name, field in form.fields.items():
-                print(f"{field_name}: required={field.required}")
-
-        # Log form validation status
-
-        if form.is_valid():
-            print("\n--- CREATING ORDER ---")
-
-
-            # Create the order without address fields if pickup is selected
-            order_data = {
-                'customer': request.user,
-                'cart': cart,
-                'subtotal': subtotal,
-                'total_discount': total_discount,
-                'hst': hst,
-                'total_with_hst': total_with_hst,
-                'total_price': subtotal,
-                'delivery_option': form.cleaned_data['delivery_option'],
-                'order_number': generate_order_number(),
-                'order_time': timezone.now(),
-                'total_with_hst_and_shipping': total_with_hst_and_shipping,
-
-            }
-
-            # Only include address fields if delivery is not pickup
-            if delivery_option != 'pickup':
-                order_data.update({
-                    'street': form.cleaned_data['street'],
-                    'city': form.cleaned_data['city'],
-                    'province': form.cleaned_data['province'],
-                    'postal_code': form.cleaned_data['postal_code'],
-                    'country': form.cleaned_data['country']
-                })
-
-            # Place the order and mark checkout as completed
-            order = Order.objects.create(**order_data)
-            for cart_item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    item=cart_item.item,
-                    quantity=cart_item.quantity,
-                    original_price=cart_item.item.price_default,
-                    discounted_price=cart_item.price,
-                    total_price=cart_item.total_price(),
-                    discount=(cart_item.item.price_default - cart_item.price) * cart_item.quantity
-                )
-            cart.completed = True
-            cart.save()
-            messages.success(request, f"Order {order.order_number} placed successfully!")
-
-            # Reset checkout session data for fresh start in next checkout
-
-              # Reset session for a fresh checkout
-
-            print(f"Order {order.order_number} created for customer {request.user}")
-
-            # Redirect to the order confirmation page
-            return redirect('ecommerce:order_confirmation', order_id=order.id)
-
-        else:
-            # Form validation failed; log errors for debugging
-            print("\nForm is invalid")
-            print("\n--- FORM ERRORS ---")
-            for field, errors in form.errors.items():
-                print(f"{field}: {errors}")
-            print("\n--- FIELD REQUIREMENTS AFTER MODIFICATION ---")
-            for field_name, field in form.fields.items():
-                print(f"{field_name}: required={field.required}")
-    else:
-        form = OrderForm()
-
-    # form = None
-    print('444444444444444')
-    print("\n--- CHECKOUT FORM ---")
     context = {
         'cart': cart,
-        'form': form,
         'subtotal': subtotal,
         'total_discount': total_discount,
         'hst': hst,
         'total_with_hst': total_with_hst,
         'cart_items': cart_items,
-        'timeout': CHECKOUT_TIMEOUT,  # Pass timeout duration to the template
-        'payment_success': payment_success,  # Pass this to the template
-        'shipping_rates': shipping_rates,
-        'show_shipping_rates': show_shipping_rates,  # NEW: Add flag to context
-        'total_with_hst_and_shipping': total_with_hst_and_shipping,  # Updated total
-        'shipping_service_name': shipping_service_name,
-        'shipping_data': shipping_data,
+        'timeout': CHECKOUT_TIMEOUT,
+        'remaining_time': remaining_time,
+    }
+    return render(request, 'ecommerce/checkout.html', context)
 
+
+@login_required
+def confirm_shipping_method(request):
+    remaining_time = get_remaining_time(request, CHECKOUT_TIMEOUT)
+
+    if remaining_time <= 0:
+        messages.error(request, "Your checkout session has timed out. Please try again.")
+        return redirect('ecommerce:cart_detail')
+    context = {
+        'remaining_time': remaining_time,
+        # [Other context variables]
+    }
+    return render(request, 'ecommerce/confirm_shipping_method.html',context)
+
+
+from django.shortcuts import render, redirect
+from decimal import Decimal
+from django.contrib.auth.decorators import login_required
+
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from decimal import Decimal, InvalidOperation
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from decimal import Decimal, InvalidOperation
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from django.contrib.auth.decorators import login_required
+from .models import Cart  # Adjust this import based on your app structure
+
+
+@login_required
+def before_payment(request):
+    remaining_time = get_remaining_time(request, CHECKOUT_TIMEOUT)
+
+    if remaining_time <= 0:
+        messages.error(request, "Your checkout session has timed out. Please try again.")
+        return redirect('ecommerce:cart_detail')
+    print("Starting checkout process")
+
+    # Fetch the user's cart and cart items
+    cart = get_object_or_404(Cart, customer=request.user, completed=False)
+    cart_items = cart.cartitem_set.all()
+    print("Cart items:", cart_items)
+
+    # Calculate subtotal, total discount, HST, and total price with HST
+    subtotal = sum(item.price * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_discount = sum((item.item.price_default - item.price) * item.quantity for item in cart_items).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP)
+    hst_rate = Decimal('0.13')
+    hst = (subtotal * hst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_with_hst = (subtotal + hst).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    print(
+        f"Calculated totals: Subtotal={subtotal}, Total Discount={total_discount}, HST={hst}, Total with HST={total_with_hst}")
+
+    # Retrieve shipping data and determine shipping cost based on the selected delivery option
+    shipping_data = request.session.get('shipping_data', {})
+    if shipping_data.get('delivery_option') == 'pickup':
+        shipping_cost = Decimal('0.00')  # Set to zero if pickup is selected
+    else:
+        shipping_cost = Decimal(request.session.get('shipping_cost', '0'))  # Default to 0 if not set
+
+    # Recalculate the total with HST and shipping
+    total_with_hst_and_shipping = (total_with_hst + shipping_cost).quantize(Decimal('0.01'))
+
+    # Handle manual update of shipping cost (for instance, if entered manually)
+    if request.method == 'POST' and 'x' in request.POST:
+        manual_shipping_cost = request.POST.get('manual_shipping_cost')
+        shipping_service_name = request.POST.get('shipping_service_name')  # Retrieve the service name
+
+        if manual_shipping_cost:
+            try:
+                shipping_cost = Decimal(manual_shipping_cost)
+                request.session['shipping_cost'] = str(shipping_cost)  # Store as string in session
+                request.session['shipping_service_name'] = shipping_service_name  # Store service name in session
+                messages.success(request,
+                                 f"Shipping cost updated to ${shipping_cost} with service {shipping_service_name}.")
+            except InvalidOperation:
+                messages.error(request, "Invalid shipping cost entered.")
+                return redirect('ecommerce:before_payment')  # Reload to avoid invalid state
+
+        # Update the total with the new shipping cost
+        total_with_hst_and_shipping = total_with_hst + shipping_cost
+
+    # Context data to pass to the template
+    context = {
+        'cart': cart,
+        'subtotal': subtotal,
+        'total_discount': total_discount,
+        'hst': hst,
+        'total_with_hst': total_with_hst,
+        'cart_items': cart_items,
+        'shipping_cost': shipping_cost,  # Shipping cost to display in the template
+        'total_with_hst_and_shipping': total_with_hst_and_shipping,
+        'shipping_service_name': request.session.get('shipping_service_name', ''),
+        'delivery_option': shipping_data.get('delivery_option', ''),
+        'remaining_time': remaining_time,
 
     }
-    request.session['show_shipping_rates'] = False  # NEW: Reset flag
 
-    return render(request, 'ecommerce/checkout.html', context)
+    return render(request, 'ecommerce/before_payment.html', context)
+
+
+
+
+
+
+def get_remaining_time(request, timeout_seconds):
+    checkout_start_time = request.session.get('checkout_start_time')
+    if not checkout_start_time:
+        # Set the start time if it doesn't exist
+        request.session['checkout_start_time'] = timezone.now().isoformat()
+        return timeout_seconds
+    else:
+        # Calculate remaining time
+        checkout_start_time = timezone.datetime.fromisoformat(checkout_start_time)
+        elapsed_time = (timezone.now() - checkout_start_time).total_seconds()
+        remaining_time = max(0, timeout_seconds - elapsed_time)
+
+        # If time has expired, clear the session and return 0
+        if remaining_time <= 0:
+            reset_checkout_session(request)
+            return 0
+        return remaining_time
+
+
+
+# @login_required
+# def checkout(request):
+#     checkout_start_time = request.session.get('checkout_start_time')
+#
+#     if checkout_start_time:
+#         # Convert the stored string timestamp back to a datetime object
+#         checkout_start_time = timezone.datetime.fromisoformat(checkout_start_time)
+#         elapsed_time = (timezone.now() - checkout_start_time).total_seconds()
+#         remaining_time = max(0, CHECKOUT_TIMEOUT - elapsed_time)
+#
+#         # If timeout has expired, cancel the checkout and redirect to the cart
+#         if remaining_time <= 0:
+#             cancel_checkout(request.user.id)  # Restore stock if needed
+#             reset_checkout_session(request)  # Clear session data
+#             messages.error(request, "Your checkout session has timed out. Please try again.")
+#             return redirect('ecommerce:cart_detail')  # Redirect to the cart page
+#     else:
+#         # If there's no start time, set the current time as the start time
+#         request.session['checkout_start_time'] = timezone.now().isoformat()
+#         remaining_time = CHECKOUT_TIMEOUT
+#
+#
+#
+#     print("Starting checkout process")
+#     payment_success = request.session.get('payment_success', False)
+#     cart = get_object_or_404(Cart, customer=request.user, completed=False)
+#     cart_items = cart.cartitem_set.all()
+#     print("Cart items:", cart_items)
+#     # Calculate subtotal, total discount, HST, and total price with HST
+#     subtotal = sum(item.price * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+#     total_discount = sum((item.item.price_default - item.price) * item.quantity for item in cart_items).quantize(
+#         Decimal('0.01'), rounding=ROUND_HALF_UP)
+#     hst_rate = Decimal('0.13')
+#     hst = (subtotal * hst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+#     total_with_hst = (subtotal + hst).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+#     print(f"Calculated totals: Subtotal={subtotal}, Total Discount={total_discount}, HST={hst}, Total with HST={total_with_hst}")
+#
+#     # Retrieve shipping rates and cost
+#     shipping_rates = request.session.get('shipping_rates', [])
+#     show_shipping_rates = request.session.get('show_shipping_rates', False)
+#     shipping_cost = Decimal(request.session.get('shipping_cost', '0'))
+#     shipping_data = request.session.get('shipping_data', {})
+#     print("Shipping data:", shipping_data, "Shipping cost:", shipping_cost)
+#
+#     # Check if user submitted a manual shipping cost
+#     if request.method == 'POST' and 'x' in request.POST:
+#         manual_shipping_cost = request.POST.get('manual_shipping_cost')
+#         shipping_service_name = request.POST.get('shipping_service_name')  # Retrieve the service name
+#
+#         if manual_shipping_cost:
+#             try:
+#                 shipping_cost = Decimal(manual_shipping_cost)
+#                 request.session['shipping_cost'] = str(shipping_cost)  # Store as string in session
+#                 request.session['shipping_service_name'] = shipping_service_name  # Store service name in session
+#                 messages.success(request,
+#                                  f"Shipping cost updated to ${shipping_cost} with service {shipping_service_name}.")
+#             except InvalidOperation:
+#                 messages.error(request, "Invalid shipping cost entered.")
+#
+#     total_with_hst_and_shipping = total_with_hst + shipping_cost
+#     request.session['total_with_hst_and_shipping'] = str(total_with_hst_and_shipping)  # Save in session as string
+#     print(f"Total with HST + Shipping: {total_with_hst_and_shipping}")
+#     shipping_service_name = request.session.get('shipping_service_name', '')
+#
+#     print('flaaaag', flag)
+#     if flag == 0:
+#         print('ruuuun')
+#         shipping_cost = 0
+#
+#     print(total_with_hst)
+#     print(shipping_cost)
+#
+#
+#
+#     # Use defaultdict to track total quantities by parent item
+#     parent_item_totals = defaultdict(int)
+#     reduced_stock = {}
+#
+#     # Check if the stock has already been reduced for this session
+#     if f'checkout_{cart.id}' not in checkout_reservations:
+#         print("\n--- CHECKOUT STARTED ---")
+#         print(f"Customer: {request.user}")
+#         print(f"Subtotal: {subtotal}, Total Discount: {total_discount}, HST: {hst}, Total with HST: {total_with_hst}")
+#         reset_checkout_session(request)  # Reset session for a fresh checkout
+#
+#         # Consolidate quantities for each parent item and show how much will be reduced
+#         for cart_item in cart_items:
+#             item = cart_item.item
+#             parent_item = item.parent_item if item.parent_item else item
+#
+#             print(f"Processing item: {item.system_sku} - {item.description}")
+#
+#             # Handle box items
+#             if 'Box' in item.manufacturer_sku and parent_item.box_quantity:
+#                 box_quantity = parent_item.box_quantity
+#                 single_equivalent = box_quantity * cart_item.quantity
+#                 parent_item_totals[parent_item.manufacturer_sku] += single_equivalent
+#                 print(
+#                     f"Box: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
+#
+#             # Handle bag items
+#             elif 'Bag' in item.manufacturer_sku and parent_item.bag_quantity:
+#                 bag_quantity = parent_item.bag_quantity
+#                 single_equivalent = bag_quantity * cart_item.quantity
+#                 parent_item_totals[parent_item.manufacturer_sku] += single_equivalent
+#                 print(
+#                     f"Bag: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
+#
+#             # Handle single items
+#             else:
+#                 parent_item_totals[parent_item.manufacturer_sku] += cart_item.quantity
+#                 print(f"Single: {item.manufacturer_sku}, Quantity: {cart_item.quantity}")
+#
+#         print(f"\n--- CONSOLIDATED ITEMS BY PARENT ---")
+#         for parent_sku, total_quantity in parent_item_totals.items():
+#             print(f"Parent SKU: {parent_sku}, Total Quantity: {total_quantity}")
+#
+#         print(f"Total single-equivalent items in cart: {sum(parent_item_totals.values())}")
+#
+#         # Perform stock reduction at the beginning of the checkout process
+#         for parent_sku, total_quantity in parent_item_totals.items():
+#             item = get_object_or_404(Item, manufacturer_sku=parent_sku)
+#             print(f"\n--- STOCK REDUCTION FOR ITEM {item.system_sku} ---")
+#             print(f"Current stock: {item.quantity_on_hand}, Reducing by: {total_quantity}")
+#
+#             if item.quantity_on_hand < total_quantity:
+#                 messages.error(request,
+#                                f"Insufficient stock for item {item.description}. Only {item.quantity_on_hand} available.")
+#                 print(
+#                     f"Stock insufficient for {item.system_sku}. Available: {item.quantity_on_hand}, Required: {total_quantity}")
+#                 return redirect('ecommerce:cart_detail')
+#
+#             # Reduce stock and store the reduction
+#             item.quantity_on_hand -= total_quantity
+#             item.save()
+#             reduced_stock[item.system_sku] = total_quantity
+#             print(f"New stock after reduction: {item.quantity_on_hand}")
+#
+#         # Store stock reductions in the global checkout_reservations dictionary
+#         checkout_reservations[f'checkout_{cart.id}'] = reduced_stock
+#         return redirect('ecommerce:checkout')
+#
+#     print('1111111111111111111')
+#
+#     # Define the timeout behavior for restoring stock
+#     def restore_stock_if_not_completed(cart_id, reduced_stock):
+#         print("\n--- CHECKOUT TIMEOUT ---")
+#         try:
+#             cart = Cart.objects.get(id=cart_id, completed=False)
+#             if not cart.completed:
+#                 print(f"Restoring stock for abandoned cart {cart.id}.")
+#                 for sku, quantity in reduced_stock.items():
+#                     try:
+#                         item = get_object_or_404(Item, system_sku=sku)
+#                         item.quantity_on_hand += quantity  # Restore the stock
+#                         item.save()
+#                         print(f"Restored {quantity} units for item {sku}.")
+#                     except Item.DoesNotExist:
+#                         print(f"Item with SKU {sku} does not exist. Cannot restore stock.")
+#                 cart.completed = False  # Mark the cart as not completed
+#                 cart.save()
+#
+#                 # Clean up the reservation to avoid conflict
+#                 if f'checkout_{cart_id}' in checkout_reservations:
+#                     del checkout_reservations[f'checkout_{cart_id}']
+#                 print(f"Stock restored and reservation removed for cart {cart_id}.")
+#
+#                 # Since we cannot redirect from a separate thread, we log the timeout
+#                 print("Checkout timed out. Stock has been restored.")
+#         except Cart.DoesNotExist:
+#             print(f"Cart {cart_id} does not exist or is already completed. No stock to restore.")
+#
+#     # Start a timer to cancel the checkout after timeout if not completed
+#     timeout_timer = threading.Timer(CHECKOUT_TIMEOUT, restore_stock_if_not_completed,
+#                                     args=(cart.id, checkout_reservations.get(f'checkout_{cart.id}', {})))
+#     timeout_timer.start()
+#     print('222222222222222222222222')
+#     print("kir to kon", cart)
+#     # Check if the request is POST to complete the order
+#     if request.method == 'POST':
+#         if not payment_success:
+#             messages.error(request, "Please complete your payment with PayPal before placing your order.")
+#             return redirect('ecommerce:checkout')  # Prevents further order processing without payment confirmation
+#
+#         timeout_timer.cancel()  # Cancel the timer as the checkout is proceeding
+#         print(f"Checkout timer with ID {timeout_timer.ident} canceled")
+#
+#         # Log POST data for debugging
+#         print("\n--- CHECKOUT POST DATA ---")
+#         for key, value in request.POST.items():
+#             print(f"{key}: {value}")
+#
+#         form = OrderForm(request.POST)
+#
+#         # Log initial field requirements
+#         print("\n--- INITIAL FIELD REQUIREMENTS ---")
+#         for field_name, field in form.fields.items():
+#             print(f"{field_name}: required={field.required}")
+#
+#         # Check the delivery option to adjust form validation requirements
+#         delivery_option = request.POST.get('delivery_option')
+#         print(f"\nSelected delivery option: {delivery_option}")
+#
+#         if delivery_option == 'pickup':
+#             form.fields['street'].required = False
+#             form.fields['city'].required = False
+#             form.fields['province'].required = False
+#             form.fields['postal_code'].required = False
+#             form.fields['country'].required = False
+#
+#             print("\n--- UPDATED FIELD REQUIREMENTS FOR PICKUP ---")
+#             for field_name, field in form.fields.items():
+#                 print(f"{field_name}: required={field.required}")
+#
+#         # Log form validation status
+#
+#         if form.is_valid():
+#             print("\n--- CREATING ORDER ---")
+#
+#
+#             # Create the order without address fields if pickup is selected
+#             order_data = {
+#                 'customer': request.user,
+#                 'cart': cart,
+#                 'subtotal': subtotal,
+#                 'total_discount': total_discount,
+#                 'hst': hst,
+#                 'total_with_hst': total_with_hst,
+#                 'total_price': subtotal,
+#                 'delivery_option': form.cleaned_data['delivery_option'],
+#                 'order_number': generate_order_number(),
+#                 'order_time': timezone.now(),
+#                 'total_with_hst_and_shipping': total_with_hst_and_shipping,
+#
+#             }
+#
+#             # Only include address fields if delivery is not pickup
+#             if delivery_option != 'pickup':
+#                 order_data.update({
+#                     'street': form.cleaned_data['street'],
+#                     'city': form.cleaned_data['city'],
+#                     'province': form.cleaned_data['province'],
+#                     'postal_code': form.cleaned_data['postal_code'],
+#                     'country': form.cleaned_data['country']
+#                 })
+#
+#             # Place the order and mark checkout as completed
+#             order = Order.objects.create(**order_data)
+#             for cart_item in cart_items:
+#                 OrderItem.objects.create(
+#                     order=order,
+#                     item=cart_item.item,
+#                     quantity=cart_item.quantity,
+#                     original_price=cart_item.item.price_default,
+#                     discounted_price=cart_item.price,
+#                     total_price=cart_item.total_price(),
+#                     discount=(cart_item.item.price_default - cart_item.price) * cart_item.quantity
+#                 )
+#             cart.completed = True
+#             cart.save()
+#             messages.success(request, f"Order {order.order_number} placed successfully!")
+#
+#             # Reset checkout session data for fresh start in next checkout
+#
+#               # Reset session for a fresh checkout
+#
+#             print(f"Order {order.order_number} created for customer {request.user}")
+#
+#             # Redirect to the order confirmation page
+#             return redirect('ecommerce:order_confirmation', order_id=order.id)
+#
+#         else:
+#             # Form validation failed; log errors for debugging
+#             print("\nForm is invalid")
+#             print("\n--- FORM ERRORS ---")
+#             for field, errors in form.errors.items():
+#                 print(f"{field}: {errors}")
+#             print("\n--- FIELD REQUIREMENTS AFTER MODIFICATION ---")
+#             for field_name, field in form.fields.items():
+#                 print(f"{field_name}: required={field.required}")
+#     else:
+#         form = OrderForm()
+#
+#     # form = None
+#     print('444444444444444')
+#     print("\n--- CHECKOUT FORM ---")
+#     context = {
+#         'cart': cart,
+#         'form': form,
+#         'subtotal': subtotal,
+#         'total_discount': total_discount,
+#         'hst': hst,
+#         'total_with_hst': total_with_hst,
+#         'cart_items': cart_items,
+#         'timeout': CHECKOUT_TIMEOUT,  # Pass timeout duration to the template
+#         'payment_success': payment_success,  # Pass this to the template
+#         'shipping_rates': shipping_rates,
+#         'show_shipping_rates': show_shipping_rates,  # NEW: Add flag to context
+#         'total_with_hst_and_shipping': total_with_hst_and_shipping,  # Updated total
+#         'shipping_service_name': shipping_service_name,
+#         'shipping_data': shipping_data,
+#         'remaining_time': remaining_time,
+#     }
+#     request.session['show_shipping_rates'] = False  # NEW: Reset flag
+#
+#     return render(request, 'ecommerce/checkout.html', context)
+
+
+
+
+
+
+
+
+
+
+
 
 def cancel_checkout(user_id):
     """
@@ -1161,6 +1475,7 @@ def reset_checkout_session(request):
     """
     # List of checkout-related session keys to delete
     checkout_keys = [
+        'checkout_start_time',
         'checkout_started',
         'payment_success',
         'shipping_cost',
@@ -1264,7 +1579,6 @@ from django.conf import settings
 def order_confirmation(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     cart_items = order.cart.cartitem_set.all()
-    reset_checkout_session(request)
 
     # External logo URL
     logo_url = 'https://www.mekcosupply.com/wp-content/uploads/2020/07/Mekco-Supply-logo-300-pix-2020.jpg'
@@ -1401,287 +1715,335 @@ def index(request):
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from .models import Order
-from .forms import BulkActionForm, StatusChangeForm
-
-
-@staff_member_required
-def custom_order_list_view(request):
-    statuses = Order.STATUS_CHOICES
-    orders_by_status = {}
-
-    for status in statuses:
-        status_code = status[0]
-        status_display = dict(Order.STATUS_CHOICES).get(status_code)
-        orders = Order.objects.filter(status=status_code).order_by('-created_at')
-        orders_by_status[status_display] = orders
-
-    if request.method == 'POST':
-        form = BulkActionForm(request.POST)
-        if form.is_valid():
-            selected_orders = form.cleaned_data['selected_orders']
-            action = form.cleaned_data['action']
-
-            if action == 'delete':
-                selected_orders.delete()
-            else:
-                # Update status and send notification for each selected order
-                new_status = None
-                if action == 'mark_as_ready_for_pickup':
-                    new_status = 'ready_for_pickup'
-                elif action == 'mark_as_shipped':
-                    new_status = 'shipped'
-
-                if new_status:
-                    for order in selected_orders:
-                        if order.status != new_status:
-                            order.status = new_status
-                            order.save()
-                            send_status_update_email(order)
-
-            return redirect('ecommerce:admin_order_list')
-    else:
-        form = BulkActionForm()
-
-    context = {
-        'orders_by_status': orders_by_status,
-        'form': form,
-    }
-    return render(request, 'ecommerce/admin_order_list.html', context)
-
-
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from .models import Order
-from .forms import StatusChangeForm
-
-
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from .models import Order
-from .forms import StatusChangeForm
-from django.utils.html import strip_tags
-import logging
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from .models import Order
-from .forms import StatusChangeForm
-import logging
-
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from .models import Order
-from .forms import StatusChangeForm
-import logging
-
-# Set up logging
-logger = logging.getLogger(__name__)
-
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.admin.views.decorators import staff_member_required
-from .models import Order
-from .forms import StatusChangeForm
-import logging
-
-logger = logging.getLogger(__name__)
-
-from django.contrib import messages
-
-@staff_member_required
-def custom_order_detail_view(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    logger.info(f"Accessing custom_order_detail_view for order_id={order_id}")
-
-    if request.method == 'POST':
-        form = StatusChangeForm(request.POST)
-        action = request.POST.get("action")  # Get the selected action from the dropdown
-        logger.info(f"Received action: {action}")
-
-        # Define the status map based on action
-        status_map = {
-            'mark_as_unread': 'unread',
-            'mark_as_preparing': 'preparing',
-            'mark_as_ready_for_pickup': 'ready_for_pickup',
-            'mark_as_ready_for_shipping': 'ready_for_shipping',
-            'mark_as_shipped': 'shipped',
-            'mark_as_delivered': 'delivered',
-            'mark_as_cancelled': 'cancelled',
-            'mark_as_complete': 'complete',
-        }
-        new_status = status_map.get(action)
-        logger.info(f"Mapped action to new_status: {new_status}")
-
-        # Validate form and action, and restrict status change if already cancelled
-        if action and new_status:
-            previous_status = order.status
-
-            # Check if the order is "cancelled" and restrict changes
-            if previous_status == 'cancelled' and new_status != 'unread':
-                logger.warning(f"Attempt to change status of cancelled order #{order.order_number} to {new_status}")
-                messages.warning(request, "Cancelled orders cannot be changed.")
-            else:
-                if previous_status != new_status:
-                    order.status = new_status
-                    order.save()
-                    logger.info(f"Order #{order.order_number} status updated to {order.get_status_display()}")
-
-                    # Send status update email
-                    try:
-                        send_status_update_email(order)
-                        logger.info(f"Status update email sent for order #{order.order_number} with new status: {order.get_status_display()}")
-                        messages.success(request, f"Order status has been changed to {order.get_status_display()} and the customer has been notified.")
-                    except Exception as e:
-                        logger.error(f"Failed to send status update email for order #{order.order_number}: {e}")
-                        messages.error(request, "Failed to send notification email to the customer. Please try again.")
-                else:
-                    logger.info(f"No status change needed for order #{order.order_number} (status remains {previous_status})")
-                    messages.info(request, "Order status was not changed.")
-
-            return redirect('ecommerce:admin_order_detail', order_id=order.id)
-        else:
-            if not action:
-                logger.error("No action provided in form submission.")
-            messages.error(request, "Invalid action or form submission. Please try again.")
-    else:
-        form = StatusChangeForm()
-
-    # Define status choices for the dropdown
-    status_choices = [
-        ('mark_as_unread', 'Unread'),
-        ('mark_as_preparing', 'Preparing'),
-        ('mark_as_ready_for_pickup', 'Ready for Pickup'),
-        ('mark_as_ready_for_shipping', 'Ready for Shipping'),
-        ('mark_as_shipped', 'Shipped'),
-        ('mark_as_delivered', 'Delivered'),
-        ('mark_as_cancelled', 'Cancelled'),
-        ('mark_as_complete', 'Complete'),
-    ]
-
-    context = {
-        'order': order,
-        'order_items': order.items.all(),
-        'form': form,
-        'status_choices': status_choices,
-        'customer_email': order.customer.email,
-        'cart': order.cart,
-        'subtotal': order.subtotal,
-        'total_discount': order.total_discount,
-        'hst': order.hst,
-        'total_with_hst': order.total_with_hst,
-        'total_price': order.total_price,
-        'street': order.street,
-        'city': order.city,
-        'province': order.province,
-        'postal_code': order.postal_code,
-        'country': order.country,
-        'delivery_option': order.get_delivery_option_display(),
-        'status': order.get_status_display(),
-        'completed': order.completed,
-        'created_at': order.created_at,
-        'updated_at': order.updated_at,
-        'order_number': order.order_number,
-    }
-
-    return render(request, 'ecommerce/admin_order_detail.html', context)
-
-
-
-
-
-
-
+from .forms import BulkActionForm
 
 
 # @staff_member_required
-# def custom_order_detail_view(request, order_id):
-#     # Log when the view is accessed
-#     logger.info(f"Accessing custom_order_detail_view for order_id={order_id}")
+# def custom_order_list_view(request):
+#     statuses = Order.STATUS_CHOICES
+#     orders_by_status = {}
 #
-#     # Fetch the order and log its current status
-#     order = get_object_or_404(Order, id=order_id)
-#     logger.info(f"Fetched order #{order.order_number} with current status: {order.get_status_display()}")
+#     # Group orders by status for display
+#     for status in statuses:
+#         status_code = status[0]
+#         status_display = dict(Order.STATUS_CHOICES).get(status_code)
+#         orders = Order.objects.filter(status=status_code).order_by('-created_at')
+#         orders_by_status[status_display] = orders
 #
-#     if request.method == 'POST':
-#         # Log the start of form handling
-#         logger.info(f"Handling POST request for order #{order.order_number}")
-#
-#         form = StatusChangeForm(request.POST, instance=order)
-#         if form.is_valid():
-#             # Log form validity
-#             logger.info("StatusChangeForm is valid.")
-#
-#             previous_status = order.status
-#             new_status = form.cleaned_data['status']
-#
-#             # Log the previous and new status values
-#             logger.info(f"Previous status: {previous_status}, New status from form: {new_status}")
-#
-#             # Check if the status has changed and save if it has
-#             if previous_status != new_status:
-#                 # Update the status and save
-#                 order.status = new_status
-#                 order.save()
-#                 logger.info(f"Order #{order.order_number} status updated to {order.get_status_display()}")
-#
-#                 # Try to send the email notification
-#                 try:
-#                     send_status_update_email(order)
-#                     logger.info(
-#                         f"Status update email sent successfully for order #{order.order_number} with new status: {order.get_status_display()}")
-#                     messages.success(request,
-#                                      f"Order status has been changed to {order.get_status_display()} and the customer has been notified.")
-#                 except Exception as e:
-#                     # Log the error if email sending fails
-#                     logger.error(f"Failed to send status update email for order #{order.order_number}: {e}")
-#                     messages.error(request, "Failed to send notification email to the customer. Please try again.")
-#             else:
-#                 # Log that the status was not changed
-#                 logger.info("Order status was not changed; no update was made.")
-#                 messages.info(request, "Order status was not changed.")
-#         else:
-#             # Log form invalidity and errors
-#             logger.error(f"StatusChangeForm is invalid. Errors: {form.errors}")
-#             messages.error(request, "Form is invalid. Please try again.")
-#
-#         return redirect('ecommerce:admin_order_detail', order_id=order.id)
-#     else:
-#         # Log when displaying the form in GET request
-#         logger.info(f"Displaying form for GET request on order #{order.order_number}")
-#         form = StatusChangeForm(instance=order)
+#     # No POST handling since bulk actions are removed
 #
 #     context = {
-#         'customer_email': order.customer.email,
-#         'cart': order.cart,
-#         'subtotal': order.subtotal,
-#         'total_discount': order.total_discount,
-#         'hst': order.hst,
-#         'total_with_hst': order.total_with_hst,
-#         'total_price': order.total_price,
-#         'street': order.street,
-#         'city': order.city,
-#         'province': order.province,
-#         'postal_code': order.postal_code,
-#         'country': order.country,
-#         'delivery_option': order.get_delivery_option_display(),
-#         'status': order.get_status_display(),
-#         'completed': order.completed,
-#         'created_at': order.created_at,
-#         'updated_at': order.updated_at,
-#         'order_number': order.order_number,
+#         'orders_by_status': orders_by_status,
+#     }
+#     return render(request, 'ecommerce/admin_order_list.html', context)
+#
+#
+#
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+#
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+# from django.utils.html import strip_tags
+# import logging
+#
+# # Set up logging
+# logger = logging.getLogger(__name__)
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+# import logging
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+# import logging
+#
+# # Set up logging
+# logger = logging.getLogger(__name__)
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+# import logging
+#
+# logger = logging.getLogger(__name__)
+#
+# from django.contrib import messages
+#
+# from django.contrib import messages
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib.admin.views.decorators import staff_member_required
+# from .models import Order
+# from .forms import StatusChangeForm
+# import logging
+#
+# # Set up logging
+# logger = logging.getLogger(__name__)
+#
+# from django.contrib.admin.views.decorators import staff_member_required
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib import messages
+# from django.http import HttpResponseRedirect
+# from .models import Order
+# import logging
+#
+# # Set up logging
+# logger = logging.getLogger(__name__)
+#
+# from django.contrib.admin.views.decorators import staff_member_required
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib import messages
+# from .models import Order
+# import logging
+#
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib import messages
+# from django.http import JsonResponse
+# from .models import Order
+#
+# from django.shortcuts import get_object_or_404, redirect, render
+# from django.contrib import messages
+# from .models import Order
+# from django.urls import reverse
+#
+#
+# from django.shortcuts import get_object_or_404, redirect, render
+# from django.contrib import messages
+# from django.urls import reverse
+# from .models import Order
+#
+# from django.shortcuts import render, get_object_or_404, redirect
+# from django.contrib import messages
+# from .models import Order
+# from django.urls import reverse
+# import logging
+#
+# logger = logging.getLogger(__name__)
+#
+# def update_order_status_view(request, order_id):
+#     """
+#     Handles the order status update via POST requests.
+#     """
+#     order = get_object_or_404(Order, id=order_id)
+#
+#     if request.method == "POST":
+#         # Get the submitted status from the form
+#         new_status = request.POST.get("status", "").strip()  # Strip any leading/trailing spaces
+#
+#         # Fetch valid statuses as a list
+#         valid_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+#
+#         # Debugging: log the new status and valid statuses
+#         logger.info(f"Submitted new status: '{new_status}'")
+#         logger.info(f"Valid statuses: {valid_statuses}")
+#
+#         # Validate the new status
+#         if new_status in valid_statuses:
+#             previous_status = order.status
+#             order.status = new_status
+#             order.save()
+#
+#             messages.success(
+#                 request, f"Order status updated from '{previous_status}' to '{new_status}'."
+#             )
+#             return redirect(reverse("ecommerce:order_update_status", args=[order.id]))
+#         else:
+#             logger.warning(f"Invalid status submitted: '{new_status}'")
+#             messages.error(request, "Invalid status selected. Please try again.")
+#             return redirect(reverse("ecommerce:order_update_status", args=[order.id]))
+#
+#     context = {
+#         "order": order,
+#         "status_choices": Order.STATUS_CHOICES,
+#     }
+#     return render(request, "ecommerce/admin_order_detail.html", context)
+#
+#
+#
+#
+#
+# # Initialize logger
+# logger = logging.getLogger(__name__)
+#
+# @staff_member_required
+# def custom_order_detail_view(request, order_id):
+#     # Retrieve the order object
+#     order = get_object_or_404(Order, id=order_id)
+#     logger.info(f"Accessing details for order #{order.order_number}")
+#
+#     # Define valid status choices
+#     status_choices = {
+#         'mark_as_unread': 'unread',
+#         'mark_as_preparing': 'preparing',
+#         'mark_as_ready_for_pickup': 'ready_for_pickup',
+#         'mark_as_ready_for_shipping': 'ready_for_shipping',
+#         'mark_as_shipped': 'shipped',
+#         'mark_as_delivered': 'delivered',
+#         'mark_as_cancelled': 'cancelled',
+#         'mark_as_complete': 'complete',
 #     }
 #
-#     # Log the context data before rendering the page
-#     logger.info(f"Rendering admin_order_detail page for order #{order.order_number} with context.")
+#     if request.method == 'POST':
+#         # Log the incoming POST data
+#         action = request.POST.get('action', None)
+#         logger.info(f"POST request received with action: {action}")
 #
+#         if not action or action not in status_choices:
+#             logger.error(f"Invalid action: {action} for order #{order.order_number}")
+#             messages.error(request, "Invalid action. Please select a valid status.")
+#             return redirect('ecommerce:admin_order_detail', order_id=order.id)
+#
+#         new_status = status_choices[action]
+#         logger.info(f"Action '{action}' maps to status '{new_status}'.")
+#
+#         # Prevent status change for cancelled orders unless reverting to unread
+#         if order.status == 'cancelled' and new_status != 'unread':
+#             logger.warning(f"Attempt to change cancelled order #{order.order_number}")
+#             messages.warning(request, "Cancelled orders can only be reverted to 'Unread'.")
+#             return redirect('ecommerce:admin_order_detail', order_id=order.id)
+#
+#         # Update order status
+#         previous_status = order.status
+#         order.status = new_status
+#         order.save()
+#         logger.info(f"Order #{order.order_number} status updated from '{previous_status}' to '{new_status}'.")
+#
+#         # Notify customer
+#         try:
+#             send_status_update_email(order)
+#             messages.success(
+#                 request,
+#                 f"Order status updated to {order.get_status_display()}. Notification sent to the customer.",
+#             )
+#         except Exception as e:
+#             logger.error(f"Failed to send email for order #{order.order_number}: {e}")
+#             messages.error(request, "Order status updated, but notification email failed.")
+#
+#         return redirect('ecommerce:admin_order_detail', order_id=order.id)
+#
+#     # Render the order detail page
+#     context = {
+#         'order': order,
+#         'status_choices': status_choices.items(),  # Pass choices as a list of tuples
+#         'order_items': order.items.all(),
+#     }
 #     return render(request, 'ecommerce/admin_order_detail.html', context)
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse
+from django.contrib import messages
+from .models import Order
+from .forms import OrderStatusForm  # Create a form to handle status changes
+
+
+# Custom view for listing orders
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Order
+from .forms import OrderStatusForm  # Create a form to handle status changes
+
+
+# Custom view for listing orders
+# ecommerce/views.py
+from django.shortcuts import render
+from .models import Order  # Make sure to import your Order model
+
+def order_list(request):
+    # Fetch all orders from the database
+    orders = Order.objects.all()
+    return render(request, 'ecommerce/order_list.html', {'orders': orders})
+
+
+
+# Custom view for order detail (update status to "cancelled")
+
+
+
+# ecommerce/views.py
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Order
+from .forms import OrderStatusForm
+
+def update_order_status(request, order_id):
+    # Retrieve the order by ID
+    order = get_object_or_404(Order, id=order_id)
+
+    # Handle POST request for updating order status
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=order)  # Bind the form to the existing order
+        if form.is_valid():
+            form.save()  # Save the updated status
+            messages.success(request, f"Order status updated to: {order.get_status_display()}")
+            return redirect('ecommerce:order_detail', order_id=order.id)
+    else:
+        form = OrderStatusForm(instance=order)  # Bind the form to the order instance for GET request
+
+    return render(request, 'ecommerce/order_detail.html', {
+        'order': order,
+        'form': form
+    })
+
+# views.py
+from django.shortcuts import render
+from .models import Order
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Order
+from .forms import OrderStatusForm  # Assume this form updates the order status
+
+from django.shortcuts import render, get_object_or_404
+from .models import Order, OrderItem
+from .forms import OrderStatusForm
+
+from django.shortcuts import render, get_object_or_404
+from .models import Order, OrderItem
+from .forms import OrderStatusForm
+
+def order_detail(request, order_id):
+    # Fetch the order by ID
+    order = get_object_or_404(Order, id=order_id)
+    order_items = order.items.all() # 'items' is the related_name in OrderItem
+
+    # Prepare the form to update the order's status
+    if request.method == 'POST':
+        form = OrderStatusForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Order status updated to: {order.get_status_display()}")
+            return redirect('ecommerce:order_detail', order_id=order_id)
+    else:
+        form = OrderStatusForm(instance=order)
+
+    return render(request, 'ecommerce/order_detail.html', {
+        'order': order,
+        'order_items': order.items.all(),
+        'form': form,
+    })
+
+
+
+
+
 
 
 from django.core.mail import send_mail
@@ -1792,6 +2154,8 @@ from django.contrib import messages
 from ecommerce.models import Cart, Item
 
 
+from django.urls import reverse
+
 @login_required
 def paypal_payment(request):
     cart = get_object_or_404(Cart, customer=request.user, completed=False)
@@ -1802,9 +2166,8 @@ def paypal_payment(request):
     hst = (subtotal * hst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     total_with_hst = (subtotal + hst).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     shipping_cost = Decimal(request.session.get('shipping_cost', '0'))
-    total_with_hst_and_shipping = Decimal(request.session.get('total_with_hst_and_shipping', '0')).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP)
-    shipping_cost = Decimal(request.session.get('shipping_cost', '0')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_with_hst_and_shipping = (total_with_hst + shipping_cost).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
     # PayPal configuration
     paypalrestsdk.configure({
         "mode": settings.PAYPAL_MODE,
@@ -1827,8 +2190,8 @@ def paypal_payment(request):
             "payment_method": "paypal"
         },
         "redirect_urls": {
-            "return_url": "http://127.0.0.1:8000/ecommerce/payment/execute/",
-            "cancel_url": "http://127.0.0.1:8000/ecommerce/payment/cancel/"
+            "return_url": request.build_absolute_uri(reverse('ecommerce:execute_payment')),
+            "cancel_url": request.build_absolute_uri(reverse('ecommerce:cancel_payment'))
         },
         "transactions": [{
             "item_list": {
@@ -1858,6 +2221,8 @@ def paypal_payment(request):
         return render(request, "ecommerce/error.html", {"error": payment.error})
 
 
+
+
 @login_required
 def execute_payment(request):
     payment_id = request.GET.get('paymentId')
@@ -1867,20 +2232,106 @@ def execute_payment(request):
         messages.error(request, "Invalid PayPal payment request.")
         return redirect('ecommerce:checkout')
 
+    # Configure PayPal SDK
     paypalrestsdk.configure({
         "mode": settings.PAYPAL_MODE,
         "client_id": settings.PAYPAL_CLIENT_ID,
         "client_secret": settings.PAYPAL_SECRET_KEY
     })
 
+    # Execute the payment
     payment = paypalrestsdk.Payment.find(payment_id)
     if payment.execute({"payer_id": payer_id}):
-        request.session['payment_success'] = True
-        messages.success(request, "Payment was successful. You may now place your order.")
-        return redirect('ecommerce:checkout')
+        # Payment succeeded, automatically place the order
+        return place_order(request)
     else:
         messages.error(request, "Payment failed. Please try again.")
         return render(request, "ecommerce/error.html", {"error": payment.error})
+
+
+@login_required
+def place_order(request):
+    # Verify that payment was successful
+    if not request.session.get('payment_success', True):
+        messages.error(request, "Please complete your payment before placing your order.")
+        return redirect('ecommerce:checkout')
+
+    # Fetch cart and calculate order totals
+    cart = get_object_or_404(Cart, customer=request.user, completed=False)
+    cart_items = cart.cartitem_set.all()
+    subtotal = sum(item.price * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_discount = sum((item.item.price_default - item.price) * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    hst_rate = Decimal('0.13')
+    hst = (subtotal * hst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_with_hst = (subtotal + hst).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    shipping_cost = Decimal(request.session.get('shipping_cost', '0')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_with_hst_and_shipping = (total_with_hst + shipping_cost).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # Prepare order data
+    order_data = {
+        'customer': request.user,
+        'cart': cart,
+        'subtotal': subtotal,
+        'total_discount': total_discount,
+        'hst': hst,
+        'total_with_hst': total_with_hst,
+        'total_with_hst_and_shipping': total_with_hst_and_shipping,
+        'delivery_option': request.session.get('shipping_data', {}).get('delivery_option', ''),
+        'order_number': str(uuid.uuid4().hex),
+        'order_time': timezone.now(),
+        'total_price': subtotal  # Set the total_price here
+    }
+
+    # Add address fields if delivery option is not pickup
+    if order_data['delivery_option'] != 'pickup':
+        shipping_data = request.session.get('shipping_data', {})
+        order_data.update({
+            'street': shipping_data.get('street', ''),
+            'city': shipping_data.get('city', ''),
+            'province': shipping_data.get('province', ''),
+            'postal_code': shipping_data.get('postal_code', ''),
+            'country': shipping_data.get('country', '')
+        })
+
+    # Create the order
+    order = Order.objects.create(**order_data)
+
+    # Create order items
+    for cart_item in cart_items:
+        OrderItem.objects.create(
+            order=order,
+            item=cart_item.item,
+            quantity=cart_item.quantity,
+            original_price=cart_item.item.price_default,
+            discounted_price=cart_item.price,
+            total_price=cart_item.total_price(),
+            discount=(cart_item.item.price_default - cart_item.price) * cart_item.quantity
+        )
+
+    # Mark the cart as completed and clear session data
+    cart.completed = True
+    cart.save()
+
+    # Cancel timeout logic and clear session
+    if f'checkout_{cart.id}' in checkout_reservations:
+        del checkout_reservations[f'checkout_{cart.id}']
+
+    # Safely handle timeout logic
+    timeout_timer = checkout_reservations.get(f'checkout_{cart.id}')
+    if timeout_timer and hasattr(timeout_timer, 'cancel'):
+        timeout_timer.cancel()
+
+    keys_to_clear = ['checkout_start_time', 'shipping_data', 'shipping_cost', 'payment_success']
+    for key in keys_to_clear:
+        if key in request.session:
+            del request.session[key]
+
+    request.session.modified = True  # Save session changes
+
+    messages.success(request, f"Order {order.order_number} placed successfully!")
+
+    # Redirect to the order confirmation page
+    return redirect('ecommerce:order_confirmation', order_id=order.id)
 
 
 def cancel_payment(request):

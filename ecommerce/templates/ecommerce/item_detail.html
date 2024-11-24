@@ -339,64 +339,54 @@
  <h1 class="receiptTypeTitle">Cart Summary</h1>
 
 <form method="post" action="{% url 'ecommerce:update_cart_items' %}" id="cart-update-form">
-    {% csrf_token %}
-    <table class="sale lines">
-        <thead>
-        <tr>
-            <th class="description">Items</th>
-            <th class="quantity">#</th>
-            <th class="amount">Price</th>
-            <th class="apply">Apply</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for cart_item in cart_items %}
-            <tr>
-                <td class="description">
-                    <div class="line_description">{{ cart_item.item.description }}</div>
-                </td>
-                <td class="quantity">
-                    <input type="number" name="quantity_{{ cart_item.id }}" value="{{ cart_item.quantity }}"
-                           min="1" max="{{ cart_item.item.item.quantity_on_hand }}" class="form-control"
-                           onblur="applyQuantityChange({{ cart_item.id }})">
-                    x ${{ cart_item.price }}
-                </td>
-                <td class="amount">${{ cart_item.total_price|floatformat:2 }}</td>
-                <td class="apply">
-                    <button type="button" class="apply-btn" data-item-id="{{ cart_item.id }}"
-                            onclick="applyQuantityChange({{ cart_item.id }})">Apply
-                    </button>
-                </td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+            {% csrf_token %}
+            <table class="sale lines">
+                <thead>
+                <tr>
+                    <th class="description">Items</th>
+                    <th class="quantity">Quantity</th>
+                    <th class="amount">Price</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for cart_item in cart_items %}
+                    <tr>
+                        <td class="description">
+                            <div class="line_description">{{ cart_item.item.description }}</div>
+                        </td>
+                        <td class="quantity">
+                            {{ cart_item.quantity }}
+                        </td>
 
-    <table class="saletotals totals mt-3">
-        <tbody>
-        <tr>
-            <td width="100%">Subtotal</td>
-            <td class="amount" id="subtotal">${{ total_price|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <td>Discounts</td>
-            <td class="amount" id="discounts">-${{ total_discount|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <td>HST (13%)</td>
-            <td class="amount" id="hst">${{ hst|floatformat:2 }}</td>
-        </tr>
-        <tr class="total">
-            <td>Total with HST</td>
-            <td class="amount" id="total_with_hst">${{ total_price_with_hst|floatformat:2 }}</td>
-        </tr>
-        </tbody>
-    </table>
-
-    <div class="mt-3 text-end">
-        <a href="{% url 'ecommerce:checkout' %}" class="btn btn-success">Proceed to Checkout</a>
-    </div>
-</form>
+                        <td class="amount">${{ cart_item.total_price|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <table class="saletotals totals mt-3">
+                <tbody>
+                <tr>
+                    <td width="100%">Subtotal</td>
+                    <td class="amount" id="subtotal">${{ total_price|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>Discounts</td>
+                    <td class="amount" id="discounts">-${{ total_discount|floatformat:2 }}</td>
+                </tr>
+                <tr>
+                    <td>HST (13%)</td>
+                    <td class="amount" id="hst">${{ hst|floatformat:2 }}</td>
+                </tr>
+                <tr class="total">
+                    <td>Total with HST</td>
+                    <td class="amount" id="total_with_hst">${{ total_price_with_hst|floatformat:2 }}</td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="mt-3 text-end">
+                <a href="{% url 'ecommerce:checkout' %}" class="btn btn-success">Proceed to Checkout</a>
+            </div>
+        </form>
 
 {% if form_errors %}
     <div class="alert alert-danger mt-3">
@@ -416,11 +406,10 @@
 
 <p id="receiptThankYouNote" class="thankyou">Thank You for Shopping with Us!</p>
 
-    <span class="openbtn total-price" onclick="openTab()">☰ open cart</span>
+    <span class="openbtn total-price" onclick="openTab()">☰ ${{ total_price_with_hst|floatformat:2 }}</span>
 
 
 </header>
-
 
      <!-- Add message display section -->
     {% if messages %}
@@ -502,10 +491,6 @@
             </div>
         </div>
     </div>
- <div class="total-price-container openbtn1">
-    <span class="total-price">Total:</span>
-    <div id="total-price" class="total-price-box">${{ total_price_with_hst|floatformat:2 }}</div>
-</div>
     <footer>
         <div class="footer-content">
             <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" alt="Footer Image" class="footer-image">

@@ -4,69 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Details</title>
-    <style>
-        /* Basic styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f6efe8;
-            color: #333333;
-            margin: 20px;
-        }
-        h1 {
-            color: #d88a55;
-            text-align: center;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        .table-container {
-            width: 100%;
-            overflow-x: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e3e3e3;
-        }
-        th {
-            background-color: #f0d9c8;
-            color: #333333;
-        }
-        tr:hover {
-            background-color: #f9e6d9;
-        }
-        .action-select {
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #dcdcdc;
-            width: 100%;
-        }
-        button {
-            background-color: #d88a55;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #b06a3c;
-        }
-    </style>
 </head>
 <body>
+    <!-- Display messages -->
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }}">{{ message }}</div>
@@ -74,77 +14,23 @@
     {% endif %}
 
     <h1>Order {{ order.order_number }}</h1>
+    <p><strong>Current Status:</strong> {{ order.get_status_display }}</p>
 
-    <section class="section">
-        <h2>Customer Details</h2>
-        <p>Email: {{ customer_email }}</p>
-    </section>
+    <!-- Status update form -->
+    <h2>Update Order Status</h2>
+<form method="post" action="{% url 'ecommerce:order_update_status' order.id %}">
+    {% csrf_token %}
+    <label for="status">Change Status:</label>
+    <select name="status" id="status" required>
+        <option value="" disabled selected>Select a new status...</option>
+        {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+    </select>
+    <button type="submit">Update Status</button>
+</form>
 
-    <section class="section">
-        <h2>Order Summary</h2>
-        <p>Cart: {{ cart }}</p>
-        <p>Subtotal: {{ subtotal }}</p>
-        <p>Total Discount: {{ total_discount }}</p>
-        <p>HST: {{ hst }}</p>
-        <p>Total with HST: {{ total_with_hst }}</p>
-        <p>Total Price: {{ total_price }}</p>
-    </section>
-
-    <section class="section">
-        <h2>Delivery Details</h2>
-        <p>Address: {{ street }}, {{ city }}, {{ province }}, {{ postal_code }}, {{ country }}</p>
-        <p>Delivery Option: {{ delivery_option }}</p>
-    </section>
-
-    <section class="section">
-        <h2>Order Status</h2>
-        <form method="post">
-            {% csrf_token %}
-            <label for="action">Change Order Status:</label>
-            <select name="action" id="action" class="action-select">
-                <option value="" disabled selected>Select an action...</option>
-                {% for value, label in status_choices %}
-                    <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit">Update Status</button>
-        </form>
-        <p>Current Status: {{ status }}</p>
-        <p>Completed: {{ completed }}</p>
-    </section>
-
-    <section class="section">
-        <h2>Order History</h2>
-        <p>Created at: {{ created_at }}</p>
-        <p>Updated at: {{ updated_at }}</p>
-    </section>
-
-    <section class="section">
-        <h2>Order Items</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in order_items %}
-                    <tr>
-                        <td>{{ item.item.description }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.discounted_price }}</td>
-                        <td>{{ item.total_price }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <p><a href="{% url 'ecommerce:admin_order_list' %}">Back to Orders</a></p>
 </body>
 </html>

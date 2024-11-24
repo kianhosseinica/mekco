@@ -139,6 +139,7 @@ STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
@@ -196,3 +197,11 @@ PAYPAL_MODE = 'sandbox'  # 'sandbox' or 'live'
 
 
 
+SESSION_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF issues
+SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS in production
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+CSRF_COOKIE_SECURE = False
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/home/kiancv/mekco/image/items_image/'

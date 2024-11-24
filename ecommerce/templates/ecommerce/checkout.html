@@ -620,6 +620,8 @@
 
 </script>
 
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.carousel.min.css' %}">
+    <link rel="stylesheet" href="{% static 'owlcarousel/owl.theme.default.min.css' %}">
 
     <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
 
@@ -706,76 +708,81 @@
         <td class="total-label">Total with HST</td>
         <td class="amount">${{ total_with_hst|floatformat:2 }}</td>
     </tr>
-    <tr>
-        <td class="total-label">Total with HST + Shipping</td>
-        <td class="amount">${{ total_with_hst_and_shipping|floatformat:2 }}</td>
-    </tr>
-    {% if shipping_service_name %}
-    <tr>
-        <td class="total-label">Selected Shipping Service</td>
-        <td class="amount">{{ shipping_service_name }}</td>
-    </tr>
-    {% endif %}
+{#    <tr>#}
+{#        <td class="total-label">Total with HST + Shipping</td>#}
+{#        <td class="amount">${{ total_with_hst_and_shipping|floatformat:2 }}</td>#}
+{#    </tr>#}
+{#    {% if shipping_service_name %}#}
+{#    <tr>#}
+{#        <td class="total-label">Selected Shipping Service</td>#}
+{#        <td class="amount">{{ shipping_service_name }}</td>#}
+{#    </tr>#}
+{#    {% endif %}#}
 </table>
 
 
 
 <br>
-<form method="post" action="{% url 'ecommerce:get_shipping_rate' %}" id="shippingForm">
-    {% csrf_token %}
-    <input type="hidden" name="get_shipping_rate" value="true">
-    <input type="hidden" id="deliveryOptionField" name="delivery_option" value="">
+{#<form method="post" action="{% url 'ecommerce:get_shipping_rate' %}" id="shippingForm">#}
+{#    {% csrf_token %}#}
+{#    <input type="hidden" name="get_shipping_rate" value="true">#}
+{#    <input type="hidden" id="deliveryOptionField" name="delivery_option" value="">#}
+{##}
+{#    <div class="form-group">#}
+{#        <label for="id_delivery_option">Choose Delivery Option:</label>#}
+{#        <select name="delivery_option" id="id_delivery_option">#}
+{#            <option value="pickup" {% if request.session.selected_delivery_option == "pickup" %}selected{% endif %}>Pick up from store</option>#}
+{#            <option value="shipping" {% if request.session.selected_delivery_option == "shipping" %}selected{% endif %}>Shipping to address</option>#}
+{#        </select>#}
+{#    </div>#}
+{##}
+{#    <!-- Shipping Address Fields, initially hidden -->#}
+{#    <div id="shipping-form" style="display: none;">#}
+{#        <br>#}
+{#        <div class="form-group">#}
+{#            <label for="id_street">Street Address:</label>#}
+{#            <input type="text" name="street" id="id_street" value="{{ shipping_data.street }}">#}
+{#        </div>#}
+{#        <div class="form-group">#}
+{#            <label for="id_city">City:</label>#}
+{#            <input type="text" name="city" id="id_city" value="{{ shipping_data.city }}">#}
+{#        </div>#}
+{#        <div class="form-group">#}
+{#            <label for="id_province">Province:</label>#}
+{#            <input type="text" name="province" id="id_province" value="{{ shipping_data.province }}">#}
+{#        </div>#}
+{#        <div class="form-group">#}
+{#            <label for="id_postal_code">Postal Code:</label>#}
+{#            <input type="text" name="postal_code" id="id_postal_code" value="{{ shipping_data.postal_code }}">#}
+{#        </div>#}
+{#        <div class="form-group">#}
+{#            <label for="id_country">Country:</label>#}
+{#            <input type="text" name="country" id="id_country" value="{{ shipping_data.country }}">#}
+{#        </div>#}
+{##}
+{#        <!-- Carrier Selection -->#}
+{#        <div class="form-group">#}
+{#            <label for="carrier">Select Carrier:</label>#}
+{#            <select id="carrier" name="carrier" required>#}
+{#                <option value="ups" {% if shipping_data.carrier == "ups" %}selected{% endif %}>UPS</option>#}
+{#                <option value="fedex" {% if shipping_data.carrier == "fedex" %}selected{% endif %}>FedEx</option>#}
+{#                <option value="canadapost" {% if shipping_data.carrier == "canadapost" %}selected{% endif %}>Canada Post</option>#}
+{#            </select>#}
+{#        </div>#}
+{##}
+{#        <button type="button" id="get-shipping-rate" class="btn btn-primary">Get Shipping Rate</button>#}
+{#    </div>#}
+{##}
+{#    <!-- Pickup Confirmation Button, initially hidden -->#}
+{#    <div id="pickup-form" style="display: none;">#}
+{#        <br>#}
+{#        <button type="button" id="confirm-pickup" class="btn btn-primary">Confirm Delivery Method</button>#}
+{#    </div>#}
+{#</form>#}
 
-    <div class="form-group">
-        <label for="id_delivery_option">Choose Delivery Option:</label>
-        <select name="delivery_option" id="id_delivery_option">
-            <option value="pickup" {% if request.session.selected_delivery_option == "pickup" %}selected{% endif %}>Pick up from store</option>
-            <option value="shipping" {% if request.session.selected_delivery_option == "shipping" %}selected{% endif %}>Shipping to address</option>
-        </select>
-    </div>
 
-    <!-- Shipping Address Fields, initially hidden -->
-    <div id="shipping-form" style="display: none;">
-        <br>
-        <div class="form-group">
-            <label for="id_street">Street Address:</label>
-            <input type="text" name="street" id="id_street" value="{{ shipping_data.street }}">
-        </div>
-        <div class="form-group">
-            <label for="id_city">City:</label>
-            <input type="text" name="city" id="id_city" value="{{ shipping_data.city }}">
-        </div>
-        <div class="form-group">
-            <label for="id_province">Province:</label>
-            <input type="text" name="province" id="id_province" value="{{ shipping_data.province }}">
-        </div>
-        <div class="form-group">
-            <label for="id_postal_code">Postal Code:</label>
-            <input type="text" name="postal_code" id="id_postal_code" value="{{ shipping_data.postal_code }}">
-        </div>
-        <div class="form-group">
-            <label for="id_country">Country:</label>
-            <input type="text" name="country" id="id_country" value="{{ shipping_data.country }}">
-        </div>
-
-        <!-- Carrier Selection -->
-        <div class="form-group">
-            <label for="carrier">Select Carrier:</label>
-            <select id="carrier" name="carrier" required>
-                <option value="ups" {% if shipping_data.carrier == "ups" %}selected{% endif %}>UPS</option>
-                <option value="fedex" {% if shipping_data.carrier == "fedex" %}selected{% endif %}>FedEx</option>
-                <option value="canadapost" {% if shipping_data.carrier == "canadapost" %}selected{% endif %}>Canada Post</option>
-            </select>
-        </div>
-
-        <button type="button" id="get-shipping-rate" class="btn btn-primary">Get Shipping Rate</button>
-    </div>
-
-    <!-- Pickup Confirmation Button, initially hidden -->
-    <div id="pickup-form" style="display: none;">
-        <br>
-        <button type="button" id="confirm-pickup" class="btn btn-primary">Confirm Delivery Method</button>
-    </div>
+<form action="{% url 'ecommerce:confirm_shipping_method' %}" method="get">
+    <button type="submit" class="btn btn-primary">Next</button>
 </form>
 
 <script>
@@ -797,63 +804,64 @@
 </script>
 
 
-{% if payment_success %}
-        <!-- Order Placement Form shown only if payment was successful -->
-        <form action="" method="POST">
-            {% csrf_token %}
-            <input type="hidden" name="delivery_option" value="{{ shipping_data.delivery_option }}">
-            <input type="hidden" name="street" value="{{ shipping_data.street }}">
-            <input type="hidden" name="city" value="{{ shipping_data.city }}">
-            <input type="hidden" name="province" value="{{ shipping_data.province }}">
-            <input type="hidden" name="postal_code" value="{{ shipping_data.postal_code }}">
-            <input type="hidden" name="country" value="{{ shipping_data.country }}">
-            <input type="hidden" name="carrier" value="{{ shipping_data.carrier }}">
-            <button type="submit" class="btn btn-success w-100">Place Order</button>
-        </form>
-    {% else %}
-    <br>
-        <!-- PayPal Payment Button if Payment is Not Yet Made -->
-        <form action="{% url 'ecommerce:paypal_payment' %}" method="POST">
-            {% csrf_token %}
+{#{% if payment_success %}#}
+{#        <!-- Order Placement Form shown only if payment was successful -->#}
+{#        <form action="" method="POST">#}
+{#            {% csrf_token %}#}
+{#            <input type="hidden" name="delivery_option" value="{{ shipping_data.delivery_option }}">#}
+{#            <input type="hidden" name="street" value="{{ shipping_data.street }}">#}
+{#            <input type="hidden" name="city" value="{{ shipping_data.city }}">#}
+{#            <input type="hidden" name="province" value="{{ shipping_data.province }}">#}
+{#            <input type="hidden" name="postal_code" value="{{ shipping_data.postal_code }}">#}
+{#            <input type="hidden" name="country" value="{{ shipping_data.country }}">#}
+{#            <input type="hidden" name="carrier" value="{{ shipping_data.carrier }}">#}
+{#            <button type="submit" class="btn btn-success w-100">Place Order</button>#}
+{#        </form>#}
+{#    {% else %}#}
+{#    <br>#}
+{#        <!-- PayPal Payment Button if Payment is Not Yet Made -->#}
+{#        <form action="{% url 'ecommerce:paypal_payment' %}" method="POST">#}
+{#            {% csrf_token %}#}
+{##}
+{#            <button type="submit" class="btn btn-primary w-100">First make the payment to complete the order</button>#}
+{#        </form>#}
+{#        <p class="note" style="color: red;">Please complete your payment with PayPal before placing your order.</p>#}
+{#    {% endif %}#}
 
-            <button type="submit" class="btn btn-primary w-100">First make the payment to complete the order</button>
-        </form>
-        <p class="note" style="color: red;">Please complete your payment with PayPal before placing your order.</p>
-    {% endif %}
 
-
-<p class="note">{{ note }}</p>
-
-<div class="thankyou">
-    <p>Thank you for shopping with Mekco Supply!</p>
-</div>
+{#<p class="note">{{ note }}</p>#}
+{##}
+{#<div class="thankyou">#}
+{#    <p>Thank you for shopping with Mekco Supply!</p>#}
+{#</div>#}
 
 </body>
 </html>
-
 <div id="timer" style="text-align: center; font-weight: bold; margin-top: 20px;"></div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        let timeLeft = {{ timeout }};  // Use the timeout value from the context
+        let timeLeft = {{ remaining_time|default:0 }};  // Use the remaining_time value from the context
 
         function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            document.getElementById("timer").textContent = `Time left to complete checkout: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                alert("Your checkout session has expired. Redirecting to the checkout page.");
-                window.location.href = "{% url 'ecommerce:cart_detail' %}";  // Adjust to the appropriate URL if needed
+                alert("Your checkout session has expired. Redirecting to the cart page.");
+                window.location.href = "{% url 'ecommerce:cart_detail' %}";  // Adjust the URL to redirect to the appropriate page
+                return;
             }
 
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = Math.floor(timeLeft % 60);  // Display seconds as an integer
+            document.getElementById("timer").textContent = `Time left to complete checkout: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
             timeLeft--;
         }
 
+        // Start the countdown
         const timerInterval = setInterval(updateTimer, 1000);
     });
 </script>
+
 
 
 <script>

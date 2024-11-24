@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details</title>
+</head>
+<body>
+    <h1>Order Details</h1>
+
+    <!-- Customer Information -->
+    <h2>Customer Information</h2>
+    <p><strong>Customer Name:</strong> {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+    <p><strong>Customer Email:</strong> {{ order.customer.email }}</p>
+
+    <!-- Order General Information -->
+    <h2>Order Information</h2>
+    <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+    <p><strong>Delivery Option:</strong> {{ order.get_delivery_option_display }}</p>
+    <p><strong>Order Time:</strong> {{ order.order_time }}</p>
+    <p><strong>Created At:</strong> {{ order.created_at }}</p>
+    <p><strong>Updated At:</strong> {{ order.updated_at }}</p>
+
+    <!-- Delivery Address -->
+    <h2>Delivery Address</h2>
+    <p><strong>Street:</strong> {{ order.street }}</p>
+    <p><strong>City:</strong> {{ order.city }}</p>
+    <p><strong>Province:</strong> {{ order.province }}</p>
+    <p><strong>Postal Code:</strong> {{ order.postal_code }}</p>
+    <p><strong>Country:</strong> {{ order.country }}</p>
+
+    <!-- Order Pricing -->
+    <h2>Pricing Details</h2>
+    <p><strong>Subtotal:</strong> ${{ order.subtotal }}</p>
+    <p><strong>Total Discount:</strong> ${{ order.total_discount }}</p>
+    <p><strong>HST:</strong> ${{ order.hst }}</p>
+    <p><strong>Total with HST:</strong> ${{ order.total_with_hst }}</p>
+    <p><strong>Total with HST and Shipping:</strong> ${{ order.total_with_hst_and_shipping }}</p>
+    <p><strong>Total Price:</strong> ${{ order.total_price }}</p>
+
+    <!-- Order Items -->
+    <h2>Order Items</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Original Price</th>
+                <th>Discounted Price</th>
+                <th>Total Price</th>
+                <th>Discount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order_items %}
+            <tr>
+                <td>{{ item.item.description }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ item.original_price }}</td>
+                <td>${{ item.discounted_price }}</td>
+                <td>${{ item.total_price }}</td>
+                <td>${{ item.discount }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No items found for this order.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

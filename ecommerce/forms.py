@@ -42,6 +42,34 @@ class CartItemForm(forms.ModelForm):
 
 
 
+# ecommerce/forms.py
+
+from django import forms
+from .models import Order
+
+class OrderStatusForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['status']  # Only include the 'status' field
+
+    # If you want to limit available statuses, you can set this:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Optionally, filter the choices based on the order status
+        # For example, only allow certain statuses depending on the current order state
+        self.fields['status'].choices = [
+            ('unread', 'Unread'),
+            ('preparing', 'Preparing'),
+            ('ready_for_pickup', 'Ready for Pickup'),
+            ('ready_for_shipping', 'Ready for Shipping'),
+            ('shipped', 'Shipped'),
+            ('delivered', 'Delivered'),
+            ('cancelled', 'Cancelled'),
+            ('complete', 'Complete'),
+        ]
+
+
+
 
 
 
@@ -131,9 +159,7 @@ class BulkActionForm(forms.Form):
     action = forms.ChoiceField(choices=ACTION_CHOICES, required=True)
     selected_orders = forms.ModelMultipleChoiceField(queryset=Order.objects.all(), widget=forms.CheckboxSelectMultiple)
 
-class StatusChangeForm(forms.Form):
-    # No fields needed; we only need this for CSRF protection
-    pass
+
 
 
 
