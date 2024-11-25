@@ -25,13 +25,7 @@ SECRET_KEY = 'django-insecure-60)#2t!*97*m*%dk5way(fv=om4vh5_-aax@h(qj$90ojy!quf
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    'mekcosupply.ca',  # Your main domain
-    'www.mekcosupply.ca',  # Your subdomain or alias
-    '5.78.129.190',  # Your server's public IP address
-    '127.0.0.1',  # For local testing
-    'localhost',  # For local testing
-]
+ALLOWED_HOSTS = []
 LIGHTSPEED_ACCOUNT_ID = '292471'
 
 
@@ -140,25 +134,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-from pathlib import Path
-import os
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Static files
-STATIC_URL = '/static/'  # URL for accessing static files
-
-# The directory where `collectstatic` will gather all static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Directories to search for additional static files
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Main project static
-    os.path.join(BASE_DIR, 'ecommerce/static'),  # Ecommerce app static
-    os.path.join(BASE_DIR, 'customers/static'),  # Customers app static
-    os.path.join(BASE_DIR, 'oauth_handler/static'),  # OAuth handler app static
+    BASE_DIR / "static",
 ]
-
 
 
 # Default primary key field type
