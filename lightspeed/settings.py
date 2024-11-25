@@ -25,7 +25,13 @@ SECRET_KEY = 'django-insecure-60)#2t!*97*m*%dk5way(fv=om4vh5_-aax@h(qj$90ojy!quf
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'mekcosupply.ca',  # Your main domain
+    'www.mekcosupply.ca',  # Your subdomain or alias
+    '5.78.129.190',  # Your server's public IP address
+    '127.0.0.1',  # For local testing
+    'localhost',  # For local testing
+]
 LIGHTSPEED_ACCOUNT_ID = '292471'
 
 
