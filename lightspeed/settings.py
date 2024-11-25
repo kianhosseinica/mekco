@@ -134,10 +134,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = 'static/'
+from pathlib import Path
+import os
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Static files
+STATIC_URL = '/static/'  # URL for accessing static files
+
+# The directory where `collectstatic` will gather all static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Directories to search for additional static files
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    os.path.join(BASE_DIR, 'static'),  # Main project static
+    os.path.join(BASE_DIR, 'ecommerce/static'),  # Ecommerce app static
+    os.path.join(BASE_DIR, 'customers/static'),  # Customers app static
+    os.path.join(BASE_DIR, 'oauth_handler/static'),  # OAuth handler app static
 ]
+
 
 
 # Default primary key field type
