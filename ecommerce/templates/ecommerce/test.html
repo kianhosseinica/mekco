@@ -11,14 +11,35 @@
 <body>
     <!-- Top Bar -->
     <div class="top-bar">
-        <div class="top-bar-icons">
-            <span class="top-icon"><i class="fas fa-map-marker-alt" title="Address"></i></span>
-            <span class="top-icon"><i class="fas fa-phone" title="Phone"></i></span>
-            <span class="top-icon"><i class="fas fa-envelope" title="Email"></i></span>
-            <span class="top-icon"><i class="fas fa-shopping-cart" title="Cart"></i></span>
-            <span class="top-icon"><i class="fas fa-user" title="Login/Logout"></i></span>
-        </div>
-    </div>
+  <div class="top-bar-icons">
+    <span class="top-icon">
+      <a href="/address" title="Address">
+        <i class="fas fa-map-marker-alt"></i>
+      </a>
+    </span>
+    <span class="top-icon">
+      <a href="tel:+1234567890" title="Phone">
+        <i class="fas fa-phone"></i>
+      </a>
+    </span>
+    <span class="top-icon">
+      <a href="mailto:info@example.com" title="Email">
+        <i class="fas fa-envelope"></i>
+      </a>
+    </span>
+    <span class="top-icon">
+      <a href="{% url 'ecommerce:cart_detail' %}" title="Cart">
+        <i class="fas fa-shopping-cart"></i>
+      </a>
+    </span>
+    <span class="top-icon">
+      <a href="{% url 'customers:profile' %}" title="Login/Logout">
+        <i class="fas fa-user"></i>
+      </a>
+    </span>
+  </div>
+</div>
+
 
     <!-- Header -->
     <header class="header">
