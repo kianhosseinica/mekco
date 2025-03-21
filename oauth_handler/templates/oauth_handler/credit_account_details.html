@@ -148,6 +148,8 @@
         <div class="text-end mb-3">
             <button id="printButton" class="btn btn-secondary">Print Report</button>
             <button id="downloadPDF" class="btn btn-primary">Download as PDF</button>
+            <button id="sendToAllButton" class="btn btn-success">Send to All</button>
+
         </div>
 
         <div class="table-container">
@@ -192,35 +194,154 @@
         </div>
     </div>
 
-    <!-- Email Modal -->
-    <div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="emailModalLabel">Send Email</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="emailForm" method="post" action="{% url 'send_email' %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="recipientEmail" class="form-label">Recipient Email</label>
-                            <input type="email" class="form-control" id="recipientEmail" name="recipient" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emailSubject" class="form-label">Subject</label>
-                            <input type="text" class="form-control" id="emailSubject" name="subject" value="Credit Account Notification" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="emailMessage" class="form-label">Message</label>
-                            <textarea class="form-control" id="emailMessage" name="message" rows="5" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Send</button>
-                    </form>
-                </div>
+<!-- Updated Email Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="emailModalLabel">Send Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="emailForm" method="post" action="{% url 'send_email' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="recipientEmail" class="form-label">Recipient Email(s)</label>
+                        <textarea class="form-control" id="recipientEmail" name="recipient" rows="3" readonly></textarea>
+                        <small class="form-text text-muted">Emails will be separated by commas for multiple recipients.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailSubject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="emailSubject" name="subject" value="Credit Account Notification" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="emailMessage" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
             </div>
         </div>
     </div>
+</div>
+    <!-- Confirm Emails Modal -->
+<div class="modal fade" id="confirmEmailsModal" tabindex="-1" aria-labelledby="confirmEmailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmEmailsModalLabel">Confirm Emails</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Below is the list of emails and their messages that will be sent. Please review and confirm:</p>
+                <div id="emailsList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmSendEmails" type="button" class="btn btn-primary">Confirm and Send</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('sendToAllButton').addEventListener('click', function () {
+        var allEmails = [];
+        var emailDetails = [];
+
+        // Gather all emails and their details
+        document.querySelectorAll('tbody tr').forEach(function (row) {
+            var emails = row.querySelector('td:nth-child(4)').textContent.trim().split(/,|;/).map(e => e.trim()).filter(e => e);
+            var firstName = row.querySelector('td:nth-child(5)').textContent.trim();
+            var lastName = row.querySelector('td:nth-child(6)').textContent.trim();
+            var balance = row.querySelector('td:nth-child(2)').textContent.trim();
+
+            if (emails.length > 0) {  // Process all rows with valid email addresses
+                var dueDate = new Date().toLocaleDateString();
+                var deadline = new Date();
+                deadline.setDate(deadline.getDate() + 7);
+
+                var message = `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                        <p>Dear <strong>${firstName} ${lastName}</strong>,</p>
+                        <p>We appreciate your business and the relationship we have built over time. However, we have noticed that your account has an overdue balance of <strong>$${balance}</strong> as of <strong>${dueDate}</strong>.</p>
+                        <p>We kindly ask that you settle this balance at your earliest convenience to avoid any disruptions to your account and future orders. If payment has already been made, please disregard this message. Otherwise, please arrange payment by <strong>${deadline.toLocaleDateString()}</strong> to prevent further action on your account.</p>
+                        <p>If there are any issues or concerns regarding this payment, please reach out to us immediately so we can discuss a resolution. We value your partnership and look forward to continuing our business relationship on good terms.</p>
+                        <p style="font-weight: bold; text-align: center;">Mekco Supply - AR Team</p>
+                    </div>
+                `.trim();
+
+                emails.forEach(email => {
+                    allEmails.push(email);
+                    emailDetails.push({ email, message });
+                });
+            }
+        });
+
+        if (allEmails.length > 0) {
+            // Update the confirmation modal content
+            var emailsList = document.getElementById('emailsList');
+            emailsList.innerHTML = ''; // Clear previous content
+
+            emailDetails.forEach(function (detail, index) {
+                var emailPreview = `
+                    <div style="margin-bottom: 15px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
+                        <strong>Recipient ${index + 1}:</strong> ${detail.email}<br>
+                        <strong>Message:</strong><br>
+                        <div style="background: #f5f5f5; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">${detail.message}</div>
+                    </div>`;
+                emailsList.innerHTML += emailPreview;
+            });
+
+            // Show the confirmation modal
+            var confirmModal = new bootstrap.Modal(document.getElementById('confirmEmailsModal'));
+            confirmModal.show();
+
+            // Handle confirmation button click
+            document.getElementById('confirmSendEmails').onclick = function () {
+                sendEmails(allEmails, emailDetails);
+                confirmModal.hide();
+            };
+        } else {
+            alert('No valid email addresses found!');
+        }
+    });
+
+    function sendEmails(allEmails, emailDetails) {
+        // Prepare data for submission
+        var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        fetch("{% url 'send_email' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                recipients: allEmails,
+                details: emailDetails
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Emails sent successfully!');
+            } else {
+                alert('Failed to send emails: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+
+
+
+
+
+
 
     <script>
         var emailModal = document.getElementById('emailModal')

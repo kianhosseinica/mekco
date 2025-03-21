@@ -129,6 +129,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)  # Automatically updates when the record is modified
     order_number = models.CharField(max_length=100, unique=True, default=generate_order_number)
     order_time = models.DateTimeField(default=timezone.now)  # Add this field to track order placement time
+    paypal_sale_id = models.CharField(max_length=255, blank=True, null=True)  # Store the sale ID
 
 
     def __str__(self):
@@ -143,9 +144,17 @@ class OrderItem(models.Model):
     discounted_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount = models.DecimalField(max_digits=10, decimal_places=2)
+    packed = models.BooleanField(default=False)
+    packed_quantity = models.IntegerField(default=0)
+    back_order_quantity = models.IntegerField(default=0)
+    return_quantity = models.PositiveIntegerField(default=0)  # Ensure this field is added
+    refund_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('approved', 'Approved'), ('denied', 'Denied')], default='pending')
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     def __str__(self):
         return f"OrderItem for {self.item.description} (Order {self.order.order_number})"
+
+
 
 
 from django.contrib.auth.signals import user_logged_in

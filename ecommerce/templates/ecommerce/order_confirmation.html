@@ -1,241 +1,261 @@
-{% load custom_filters %}
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmation - Mekco Supply Inc.</title>
-    <style>
-        @page { margin: 0px; }
-        body {
-            font: normal 10pt 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            background-repeat: repeat-x;
-        }
-        .receiptHeader {
-            text-align: center;
-            color: #000;
-            margin-top: 20px;
-        }
-        .receiptHeader img {
-            margin: 8px 0 4px;
-            transition: transform 0.4s ease-in-out, box-shadow 0.4s ease;
-            border-radius: 10px;
-        }
-        .receiptHeader img:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .receiptShopContact {
-            margin: 0;
-            font-size: 14px;
-            color: #000;
-        }
-        h1 {
-            margin: 20px 0;
-            font-size: 18pt;
-            text-align: left;
-            color: #000;
-            padding-left: 20px;
-            border-bottom: 2px solid #ffc107;
-            padding-bottom: 10px;
-            transition: all 0.3s ease-in-out;
-        }
-        h1:hover {
-            color: #007bff;
-            padding-left: 25px;
-        }
-        h2 {
-            text-transform: uppercase;
-            font-size: 14pt;
-            margin: .5em 0 0;
-            color: #343a40;
-            padding-left: 20px;
-            border-left: 4px solid #ffc107;
-            padding-left: 15px;
-        }
-        h3 {
-            font-size: 12pt;
-            margin: 20px 0;
-            color: #000;
-            padding-left: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        table {
-            margin: 20px;
-            width: calc(100% - 40px);
-            border-collapse: collapse;
-            color: #000;
-        }
-        table th, table td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th.description {
-            width: 40%;
-            color: #000;
-        }
-        th.quantity, th.amount, th.original-price, th.discount-price, th.discount {
-            text-align: center;
-            color: #000;
-        }
-        td.quantity, td.amount, td.original-price, td.discount-price, td.discount {
-            text-align: center;
-            color: #000;
-        }
-        table.salelines th {
-            border-bottom: 1px solid #000;
-        }
-        table.totals th, table.totals td {
-            border: none;
-        }
-        .total-label {
-            font-weight: bold;
-        }
-        .note, .thankyou {
-            text-align: center;
-            font-size: 12px;
-            margin-top: 20px;
-            color: #000;
-        }
-        .total {
-            font-size: 1.25rem;
-            font-weight: bold;
-            margin-top: 20px;
-            color: #000;
-            text-align: right;
-            padding-right: 20px;
-            transition: all 0.3s ease;
-        }
-        .total:hover {
-            color: #007bff;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            color: white;
-            padding: 12px 30px;
-            margin: 20px auto;
-            text-align: center;
-            border-radius: 50px;
-            display: block;
-            max-width: 200px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-            transform: translateY(-3px);
-        }
-        .table-row:hover {
-            background-color: #f1f1f1;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-    </style>
-</head>
-<body>
-    <div class="receiptHeader">
-        <img src="{{ logo_url }}" width="225px" alt="Mekco Supply">
-        <p class="receiptShopContact">
-            PLUMBING . HYDRONICS . HVAC<br>
-            110 West Beaver Creek Rd. Unit 16<br>
-            Richmond Hill, ON L4B 1J9<br>
-            905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #000; text-decoration: none;">https://www.mekcosupply.com/</a><br>
-        </p>
-    </div>
+    {% load custom_filters %}
+    {% load static %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmation - Mekco Supply Inc.</title>
+        <!-- Include JsBarcode library from CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+        <style>
+            @page { margin: 0px; }
+            body {
+                font: normal 10pt 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f8f9fa;
+                background-repeat: repeat-x;
+            }
+            .receiptHeader {
+                text-align: center;
+                color: #000;
+                margin-top: 20px;
+            }
+            .receiptHeader img {
+                margin: 8px 0 4px;
+                transition: transform 0.4s ease-in-out, box-shadow 0.4s ease;
+                border-radius: 10px;
+            }
+            .receiptHeader img:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            }
+            .receiptShopContact {
+                margin: 0;
+                font-size: 14px;
+                color: #000;
+            }
+            h1 {
+                margin: 20px 0;
+                font-size: 18pt;
+                text-align: left;
+                color: #000;
+                padding-left: 20px;
+                border-bottom: 2px solid #ffc107;
+                padding-bottom: 10px;
+                transition: all 0.3s ease-in-out;
+            }
+            h1:hover {
+                color: #007bff;
+                padding-left: 25px;
+            }
+            h2 {
+                text-transform: uppercase;
+                font-size: 14pt;
+                margin: .5em 0 0;
+                color: #343a40;
+                padding-left: 20px;
+                border-left: 4px solid #ffc107;
+                padding-left: 15px;
+            }
+            h3 {
+                font-size: 12pt;
+                margin: 20px 0;
+                color: #000;
+                padding-left: 20px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            table {
+                margin: 20px;
+                width: calc(100% - 40px);
+                border-collapse: collapse;
+                color: #000;
+            }
+            table th, table td {
+                padding: 10px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            th.description {
+                width: 40%;
+                color: #000;
+            }
+            th.quantity, th.amount, th.original-price, th.discount-price, th.discount {
+                text-align: center;
+                color: #000;
+            }
+            td.quantity, td.amount, td.original-price, td.discount-price, td.discount {
+                text-align: center;
+                color: #000;
+            }
+            table.salelines th {
+                border-bottom: 1px solid #000;
+            }
+            table.totals th, table.totals td {
+                border: none;
+            }
+            .total-label {
+                font-weight: bold;
+            }
+            .note, .thankyou {
+                text-align: center;
+                font-size: 12px;
+                margin-top: 20px;
+                color: #000;
+            }
+            .total {
+                font-size: 1.25rem;
+                font-weight: bold;
+                margin-top: 20px;
+                color: #000;
+                text-align: right;
+                padding-right: 20px;
+                transition: all 0.3s ease;
+            }
+            .total:hover {
+                color: #007bff;
+            }
+            .btn-primary {
+                background-color: #007bff;
+                color: white;
+                padding: 12px 30px;
+                margin: 20px auto;
+                text-align: center;
+                border-radius: 50px;
+                display: block;
+                max-width: 200px;
+                text-decoration: none;
+                font-weight: bold;
+                transition: background-color 0.3s ease, transform 0.3s ease;
+                border: none;
+                cursor: pointer;
+            }
+            .btn-primary:hover {
+                background-color: #0056b3;
+                transform: translateY(-3px);
+            }
+            .table-row:hover {
+                background-color: #f1f1f1;
+                cursor: pointer;
+                transition: background-color 0.3s ease;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="receiptHeader">
+            <img src="{{ logo_url }}" width="225px" alt="Mekco Supply">
+            <p class="receiptShopContact">
+                PLUMBING . HYDRONICS . HVAC<br>
+                110 West Beaver Creek Rd. Unit 16<br>
+                Richmond Hill, ON L4B 1J9<br>
+                905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #000; text-decoration: none;">https://www.mekcosupply.com/</a><br>
+            </p>
+        </div>
 
-    <h1>Order Confirmation</h1>
+        <h1>Order Confirmation</h1>
 
-    <h2>Order #{{ order.id }}</h2>
-    <p style="padding-left: 20px;">Date: {{ order.created_at }}</p>
-    <p style="padding-left: 20px;">Customer: {{ order.customer.username }}</p>
+        <h2>Order #{{ order.id }}</h2>
+        <p style="padding-left: 20px;">Date: {{ order.created_at }}</p>
+        <p style="padding-left: 20px;">Customer: {{ order.customer.first_name }}  {{ order.customer.last_name }}</p>
 
-    <h3>Items:</h3>
-    <table class="salelines">
-        <thead>
-            <tr>
-                <th class="description">Item</th>
-                <th class="quantity">Quantity</th>
-                <th class="original-price">Original Price</th>
-                <th class="discount-price">Discounted Price</th>
-                <th class="amount">Total Price</th>
-                <th class="discount">Discount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cart_item in cart_items %}
-                <tr class="table-row">
-                    <td class="description">{{ cart_item.item.description }} - {{ cart_item.item.manufacturer_sku }} - {{ cart_item.item.system_sku }}</td>
-                    <td class="quantity">{{ cart_item.quantity }}</td>
-                    <td class="original-price">${{ cart_item.item.price_default|floatformat:2 }}</td>
-                    <td class="discount-price">${{ cart_item.price|floatformat:2 }}</td>
-                    <td class="amount">${{ cart_item.quantity|multiply:cart_item.price|floatformat:2 }}</td>
-                    <td class="discount">-${{ cart_item.item.price_default|subtract:cart_item.price|multiply:cart_item.quantity|floatformat:2 }}</td>
-                </tr>
-            {% empty %}
+        <!-- Barcode Section: Automatically Generated on Page Load -->
+        <div style="text-align: center; margin: 20px;">
+            <!-- SVG element where the barcode will be rendered -->
+            <svg id="barcode"></svg>
+        </div>
+
+        <h3>Items:</h3>
+        <table class="salelines">
+            <thead>
                 <tr>
-                    <td colspan="6" class="text-center">No items found in this order.</td>
+                    <th class="description">Item</th>
+                    <th class="quantity">Quantity</th>
+                    <th class="original-price">Original Price</th>
+                    <th class="discount-price">Discounted Price</th>
+                    <th class="amount">Total Price</th>
+                    <th class="discount">Discount</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for cart_item in cart_items %}
+                    <tr class="table-row">
+                        <td class="description">{{ cart_item.item.description }} - {{ cart_item.item.manufacturer_sku }} - {{ cart_item.item.system_sku }}</td>
+                        <td class="quantity">{{ cart_item.quantity }}</td>
+                        <td class="original-price">${{ cart_item.item.price_default|floatformat:2 }}</td>
+                        <td class="discount-price">${{ cart_item.price|floatformat:2 }}</td>
+                        <td class="amount">${{ cart_item.quantity|multiply:cart_item.price|floatformat:2 }}</td>
+                        <td class="discount">-${{ cart_item.item.price_default|subtract:cart_item.price|multiply:cart_item.quantity|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No items found in this order.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <div class="total">
-        Subtotal: ${{ total_price|floatformat:2 }}
-    </div>
-    <div class="total">
-        Total Discounts: -${{ total_discount|floatformat:2 }}
-    </div>
-    <div class="total">
-        HST (13%): ${{ hst|floatformat:2 }}
-    </div>
-    <div class="total">
-        Total with HST: ${{ total_with_hst|floatformat:2 }}
-    </div>
-    <div class="total">
-        total_with_hst_and_shipping : ${{ total_with_hst_and_shipping|floatformat:2 }}
-    </div>
+        <div class="total">
+            Subtotal: ${{ total_price|floatformat:2 }}
+        </div>
+        <div class="total">
+            Total Discounts: -${{ total_discount|floatformat:2 }}
+        </div>
+        <div class="total">
+            HST (13%): ${{ hst|floatformat:2 }}
+        </div>
+        <div class="total">
+            Total with HST: ${{ total_with_hst|floatformat:2 }}
+        </div>
+        <div class="total">
+            total_with_hst_and_shipping : ${{ total_with_hst_and_shipping|floatformat:2 }}
+        </div>
 
-    <p style="padding-left: 20px;">Delivery Option: {{ order.delivery_option }}</p>
-    {% if order.delivery_option == 'shipping' %}
-    <p style="padding-left: 20px;">Shipping Address: {{ order.street }}, {{ order.city }}, {{ order.province }}, {{ order.postal_code }}, {{ order.country }}</p>
-    {% endif %}
+        <p style="padding-left: 20px;">Delivery Option: {{ order.delivery_option }}</p>
+        {% if order.delivery_option == 'shipping' %}
+        <p style="padding-left: 20px;">Shipping Address: {{ order.street }}, {{ order.city }}, {{ order.province }}, {{ order.postal_code }}, {{ order.country }}</p>
+        {% endif %}
 
-    <div class="note">
-        * 8% Re-stocking fee will be applicable.<br>
-        * Mekco Supply Invoice must be presented at the time.<br><br>
-        This order is subject to Mekco Supply Inc's Terms and Conditions of Sale.<br>
-    </div>
+        <div class="note">
+            * 8% Re-stocking fee will be applicable.<br>
+            * Mekco Supply Invoice must be presented at the time.<br><br>
+            This order is subject to Mekco Supply Inc's Terms and Conditions of Sale.<br>
+        </div>
 
-    <p class="thankyou">Thank You for Shopping with Us!</p>
+        <p class="thankyou">Thank You for Shopping with Us!</p>
 
-    <a href="{% url 'ecommerce:item_list' %}" class="btn-primary">Back to Shopping</a>
+        <a href="{% url 'ecommerce:item_list' %}" class="btn-primary">Back to Shopping</a>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const rows = document.querySelectorAll('.table-row');
-            rows.forEach(row => {
-                row.addEventListener('mouseover', () => {
-                    row.style.backgroundColor = '#e9ecef';
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add hover effects for table rows and headings
+                const rows = document.querySelectorAll('.table-row');
+                rows.forEach(row => {
+                    row.addEventListener('mouseover', () => {
+                        row.style.backgroundColor = '#e9ecef';
+                    });
+                    row.addEventListener('mouseout', () => {
+                        row.style.backgroundColor = '';
+                    });
                 });
-                row.addEventListener('mouseout', () => {
-                    row.style.backgroundColor = '';
+                document.querySelectorAll('h2, h3').forEach(el => {
+                    el.addEventListener('click', () => {
+                        el.style.color = '#007bff';
+                        setTimeout(() => el.style.color = '', 500);
+                    });
+                });
+                // Automatically generate the barcode on page load using the order number
+                var orderNumber = "{{ order.order_number }}";
+                JsBarcode("#barcode", orderNumber, {
+                    format: "CODE128",    // Barcode format
+                    lineColor: "#000",    // Barcode line color
+                    width: 2,             // Width of each barcode line
+                    height: 100,          // Barcode height
+                    displayValue: true,   // Display the order number below the barcode
+                    margin: 10            // Margin around the barcode
                 });
             });
-
-            document.querySelectorAll('h2, h3').forEach(el => {
-                el.addEventListener('click', () => {
-                    el.style.color = '#007bff';
-                    setTimeout(() => el.style.color = '', 500);
-                });
-            });
-        });
-    </script>
-</body>
-</html>
+        </script>
+    </body>
+    </html>

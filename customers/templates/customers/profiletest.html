@@ -1,0 +1,112 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Mekco Supply</title>
+    <link rel="stylesheet" href="{% static 'static/css/profile.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="{% static 'static/img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Logo">
+        </div>
+        <div class="search-bar">
+            <form action="{% url 'ecommerce:item_search' %}" method="get" class="search-form" id="searchForm">
+                <input type="text" name="q" placeholder="Search for items..." class="search-input" id="searchInput" value="{{ query }}">
+            </form>
+        </div>
+        <div class="menu-btn" onclick="openMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
+    </header>
+
+    <!-- Sliding Menu -->
+    <div class="side-menu" id="sideMenu">
+        <div class="close-btn" onclick="closeMenu()">&times;</div>
+        <h3>Menu</h3>
+        <a href="{% url 'ecommerce:item_list' %}">Ecommerce</a>
+        <a href="{% url 'customers:order_history' %}">Order History</a>
+        <a href="{% url 'customers:logout' %}">Log Out</a>
+        <!-- Icons at the Bottom -->
+        <div class="side-menu-icons">
+            <span class="menu-icon"><i class="fas fa-map-marker-alt"></i></span>
+            <span class="menu-icon"><i class="fas fa-phone"></i></span>
+            <span class="menu-icon"><i class="fas fa-envelope"></i></span>
+            <span class="menu-icon"><i class="fas fa-shopping-cart"></i></span>
+            <span class="menu-icon"><i class="fas fa-user"></i></span>
+        </div>
+    </div>
+
+    <!-- Profile Page Content -->
+    <div class="profile-container">
+    <h1 class="profile-title">Your Profile</h1>
+    <h2 class="section-title">Profile Information</h2>
+    <form class="profile-form" method="post" action="{% url 'customers:profile' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="{{ profile_form.email.value }}" placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="phone" name="phone" value="{{ profile_form.phone_number.value }}" placeholder="Enter your phone number">
+        </div>
+        <div class="form-group">
+            <label for="firstname">First Name:</label>
+            <input type="text" id="firstname" name="first_name" value="{{ profile_form.first_name.value }}" placeholder="Enter your first name">
+        </div>
+        <div class="form-group">
+            <label for="lastname">Last Name:</label>
+            <input type="text" id="lastname" name="last_name" value="{{ profile_form.last_name.value }}" placeholder="Enter your last name">
+        </div>
+        <div class="form-group">
+            <label for="company">Company Name:</label>
+            <input type="text" id="company" name="company" value="{{ profile_form.company_name.value }}" placeholder="Enter your company name">
+        </div>
+        <div class="form-group">
+            <label for="additional-emails">Additional Emails:</label>
+            <input type="text" id="additional-emails" name="additional_emails" value="{{ profile_form.additional_emails.value }}" placeholder="Enter additional emails and press Enter">
+        </div>
+        <div class="form-group">
+            <label for="country">Country:</label>
+            <input type="text" id="country" name="country" value="{{ address_form.street.value }}" placeholder="Enter your country">
+        </div>
+        <div class="form-group">
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" value="{{ address_form.city.value }}" placeholder="Enter your city">
+        </div>
+        <div class="form-group">
+            <label for="province">Province:</label>
+            <input type="text" id="province" name="province" value="{{ address_form.province.value }}" placeholder="Enter your province">
+        </div>
+        <div class="form-group">
+            <label for="postalcode">Postal Code:</label>
+            <input type="text" id="postalcode" name="postal_code" value="{{ address_form.postal_code.value }}" placeholder="Enter your postal code">
+        </div>
+
+        <button class="btn-primary" type="submit">Save Changes</button>
+    </form>
+</div>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 Mekco Supply Inc. All rights reserved.</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        function openMenu() {
+            document.getElementById("sideMenu").classList.add("open");
+        }
+
+        function closeMenu() {
+            document.getElementById("sideMenu").classList.remove("open");
+        }
+    </script>
+</body>
+</html>

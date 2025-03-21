@@ -13,5 +13,6 @@ urlpatterns = [
     path('order_history/', order_history_view, name='order_history'),
     path('order/<int:order_id>/', order_detail_view, name='order_detail'),
     path('order-item/<int:order_item_id>/request-return/', request_return_view, name='request_return'),
+    # path('test-profile',test_profile, name='test_profile')
 
 ]

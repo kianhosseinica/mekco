@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'ecommerce',
     'customers',
     'ecommerce.templatetags.custom_filters',
+    'self_order',
 
 ]
 
@@ -199,9 +200,22 @@ PAYPAL_MODE = 'sandbox'  # 'sandbox' or 'live'
 
 SESSION_COOKIE_SAMESITE = 'Lax'  # Helps prevent CSRF issues
 SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS in production
-SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+SESSION_COOKIE_AGE = 120000  # 1 hour in seconds
 CSRF_COOKIE_SECURE = False
 
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/home/kiancv/mekco/image/items_image/'
+
+
+
+
+
+
+
+
+
+# Twilio settings
+TWILIO_ACCOUNT_SID = 'AC8a71d6510d168261d88f3e1d7b7f8f37'
+TWILIO_AUTH_TOKEN = '0521e396508c08156e78a02fd1323f05'
+TWILIO_PHONE_NUMBER = '+17755873877'  # Your Twilio phone number

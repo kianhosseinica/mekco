@@ -1,0 +1,226 @@
+/* Product Details Box */
+.product-details-box {
+    display: flex;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background-color: #fff;
+}
+
+/* Gallery Section */
+.product-gallery {
+    flex: 1; /* 1/3 of the width */
+    width: 30%; /* Explicitly set width for desktop */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    margin-right: 2%; /* Spacing between gallery and product info */
+    box-sizing: border-box;
+}
+
+/* Main Image Styling */
+.product-gallery .main-image img {
+    width: 100%; /* Fill the container */
+    max-height: 400px; /* Limit height */
+    object-fit: contain; /* Preserve aspect ratio */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* Thumbnail Gallery */
+.product-gallery .thumbnail-gallery {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap; /* Wrap thumbnails if they exceed the row */
+    justify-content: center; /* Center thumbnails */
+    width: 100%; /* Ensure alignment within the gallery */
+}
+
+.thumbnail-gallery img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.thumbnail-gallery img:hover {
+    transform: scale(1.1); /* Slight zoom effect */
+    border-color: #007b9b;
+}
+
+/* Product Info Section */
+.product-info {
+    flex: 2; /* Take up the remaining 2/3 width */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.product-info h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.product-info .product-description {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.product-info .brand-logo img {
+    width: 80px;
+    height: auto;
+    margin-top: 5px;
+}
+
+.product-price {
+    font-size: 20px;
+    font-weight: bold;
+    color: #007b9b;
+}
+
+/* Unified Product Input Bar */
+.product-input-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+.product-input-bar select,
+.product-input-bar input,
+.product-input-bar button {
+    border: none;
+    outline: none;
+    padding: 10px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.product-input-bar select {
+    flex: 2;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+.product-input-bar input {
+    flex: 1;
+    text-align: center;
+    max-width: 60px;
+    border: 1px solid #ddd;
+}
+
+.product-input-bar button {
+    flex: 1;
+    background-color: #00bbbc;
+    color: white;
+    cursor: pointer;
+}
+
+.product-input-bar button:hover {
+    background-color: #007b9b;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1024px) {
+    .product-gallery {
+        width: 40%; /* Adjust to 40% for tablets */
+        margin-right: 2%;
+    }
+}
+
+@media (max-width: 768px) {
+    .product-details-box {
+        flex-direction: column; /* Stack the sections on mobile */
+    }
+
+    .product-gallery {
+        width: 100%; /* Full width on mobile */
+        margin-right: 0;
+        margin-bottom: 20px; /* Add spacing below gallery */
+    }
+
+    .thumbnail-gallery img {
+        width: 40px; /* Smaller thumbnails on mobile */
+        height: 40px;
+    }
+
+    .product-info h1 {
+        font-size: 20px; /* Adjust heading size */
+    }
+
+    .product-info .product-description {
+        font-size: 14px;
+    }
+
+    .product-price {
+        font-size: 18px; /* Adjust price font size */
+    }
+}
+
+.product-price .original-price {
+    text-decoration: line-through;
+    color: red;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.product-price .discounted-price {
+    font-size: 20px;
+    font-weight: bold;
+    color: green;
+    background-color: #f0f9f0;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.brand-logo img {
+    max-width: 100px;
+    max-height: 50px;
+    margin-top: 10px;
+    object-fit: contain;
+    display: block;
+}
+.feedback-notification {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 5px;
+    width: auto;
+    max-width: 600px;
+    color: #fff;
+    box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Success message style */
+.feedback-notification.success {
+    background-color: #28a745; /* Green */
+}
+
+/* Error message style */
+.feedback-notification.error {
+    background-color: #dc3545; /* Red */
+}
+
+/* Warning message style */
+.feedback-notification.warning {
+    background-color: #ffc107; /* Yellow */
+}
+
+/* Fade-out transition */
+.feedback-notification {
+    transition: opacity 0.5s ease-in-out;
+}

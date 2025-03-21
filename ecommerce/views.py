@@ -3,6 +3,8 @@ import json  # Add this line at the top of your views.py file
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+
 from .models import EcommerceItem, Cart, CartItem, Order, get_discounted_price
 from .forms import *
 from .models import *
@@ -41,9 +43,19 @@ from .models import Item  # Ensure this is the correct import for your Item mode
 
 from django.core.paginator import Paginator
 
+from django.shortcuts import render
+from django.db.models import Q
+from django.core.paginator import Paginator
+from .models import Item
+
+from django.shortcuts import render
+from django.db.models import Q
+from django.core.paginator import Paginator
+from .models import Item
+
 def item_search(request):
     query = request.GET.get('q')
-    items = None
+    items = []
 
     if query:
         # Split the query into individual keywords
@@ -53,85 +65,105 @@ def item_search(request):
         query_filter = Q()
         for keyword in keywords:
             keyword_filter = (
-                    Q(description__icontains=keyword) |
-                    Q(system_sku__icontains=keyword) |
-                    Q(manufacturer_sku__icontains=keyword)
+                Q(description__icontains=keyword) |
+                Q(system_sku__icontains=keyword) |
+                Q(manufacturer_sku__icontains=keyword)
             )
             query_filter &= keyword_filter  # Use '&' to require all keywords
 
         # Perform the search, sorted by relevance or another field if preferred
         items = Item.objects.filter(query_filter).distinct()
 
+        # Process items to include discounted price, bag/box options, and quantity checks
+        for item in items:
+            # Add discounted price to each item
+            item.discounted_price = get_discounted_price(item, request.user)
+
+            # Check and set bag and box options
+            item.has_bag_option = item.has_bag_option
+            item.has_box_option = item.has_box_option
+
+            # Calculate the availability of singles, bags, and boxes
+            item.available_singles = item.quantity_on_hand
+            item.available_bags = (
+                item.quantity_on_hand // item.bag_quantity if item.has_bag_option and item.bag_quantity else 0
+            )
+            item.available_boxes = (
+                item.quantity_on_hand // item.box_quantity if item.has_box_option and item.box_quantity else 0
+            )
+
     # Paginate the items to show 100 items per page
     paginator = Paginator(items, 100)  # Show 100 items per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'ecommerce/search_results.html', {'page_obj': page_obj, 'query': query})
+    return render(request, 'ecommerce/test_search_results.html', {'page_obj': page_obj, 'query': query})
 
 
 
-def item_list(request):
-    brands = Brand.objects.all().order_by('name')
-    categories = Category.objects.filter(parent=None).prefetch_related('children').order_by('name')
 
-    brand_query = request.GET.get('brand', '')
-    category_query = request.GET.get('category', '')
-    search_query = request.GET.get('search', '')
 
-    items = Item.objects.filter(status='public').select_related('brand', 'category')
-
-    selected_category = None
-    subcategories = None
-
-    if category_query:
-        selected_category = get_object_or_404(Category, id=category_query)
-
-        # Use `values_list` to fetch only the `id`s of descendants.
-        descendants_ids = list(Category.objects.filter(parent=selected_category).values_list('id', flat=True))
-
-        # Apply the category and descendant filter to items
-        items = items.filter(Q(category__id=selected_category.id) | Q(category__id__in=descendants_ids))
-
-        # Load subcategories more efficiently by using `children` relation with prefetch
-        subcategories = selected_category.children.order_by('name')
-    else:
-        items = None  # No items should be loaded initially
-
-    if brand_query:
-        items = items.filter(brand__name=brand_query)
-
-    if search_query:
-        items = items.filter(
-            Q(manufacturer_sku__icontains=search_query) |
-            Q(system_sku__icontains=search_query) |
-            Q(description__icontains=search_query)
-        )
-
-    if items:
-        for item in items:
-            item.discounted_price = get_discounted_price(item, request.user)
-
-    full_category_path = []
-    if selected_category:
-        ancestor = selected_category
-        while ancestor:
-            full_category_path.insert(0, ancestor)
-            ancestor = ancestor.parent
-
-    context = {
-        'items': items,
-        'brands': brands,
-        'categories': categories,
-        'subcategories': subcategories,
-        'brand_query': brand_query,
-        'category_query': category_query,
-        'search_query': search_query,
-        'selected_category': selected_category,
-        'full_category_path': full_category_path,
-    }
-
-    return render(request, 'ecommerce/item_list.html', context)
+# def item_list(request):
+#     brands = Brand.objects.all().order_by('name')
+#     categories = Category.objects.filter(parent=None).prefetch_related('children').order_by('name')
+#
+#     brand_query = request.GET.get('brand', '')
+#     category_query = request.GET.get('category', '')
+#     search_query = request.GET.get('search', '')
+#
+#     items = Item.objects.filter(status='public').select_related('brand', 'category')
+#
+#     selected_category = None
+#     subcategories = None
+#
+#     if category_query:
+#         selected_category = get_object_or_404(Category, id=category_query)
+#
+#         # Use `values_list` to fetch only the `id`s of descendants.
+#         descendants_ids = list(Category.objects.filter(parent=selected_category).values_list('id', flat=True))
+#
+#         # Apply the category and descendant filter to items
+#         items = items.filter(Q(category__id=selected_category.id) | Q(category__id__in=descendants_ids))
+#
+#         # Load subcategories more efficiently by using `children` relation with prefetch
+#         subcategories = selected_category.children.order_by('name')
+#     else:
+#         items = None  # No items should be loaded initially
+#
+#     if brand_query:
+#         items = items.filter(brand__name=brand_query)
+#
+#     if search_query:
+#         items = items.filter(
+#             Q(manufacturer_sku__icontains=search_query) |
+#             Q(system_sku__icontains=search_query) |
+#             Q(description__icontains=search_query)
+#         )
+#
+#     if items:
+#         for item in items:
+#             item.discounted_price = get_discounted_price(item, request.user)
+#
+#     full_category_path = []
+#     if selected_category:
+#         ancestor = selected_category
+#         while ancestor:
+#             full_category_path.insert(0, ancestor)
+#             ancestor = ancestor.parent
+#
+#     context = {
+#         'items': items,
+#         'brands': brands,
+#         'categories': categories,
+#         'subcategories': subcategories,
+#         'brand_query': brand_query,
+#         'category_query': category_query,
+#         'search_query': search_query,
+#         'selected_category': selected_category,
+#         'full_category_path': full_category_path,
+#     }
+#
+#     return render(request, 'ecommerce/item_list.html', context)
 
 
 
@@ -186,62 +218,73 @@ def get_discounted_price(item, user_or_pricing_rule):
 from oauth_handler.models import Item
 
 
-def item_detail(request, item_id):
-    # Fetch the item based on its ID and ensure it's public
-    item = get_object_or_404(Item, id=item_id, status='public')
-
-    # Default message if the item is not available for purchase
-    if item.quantity_on_hand < 1:
-        message = "This item is not available for purchase. Please contact our salespersons."
-    else:
-        message = ""
-
-    # Calculate the discounted price for the main item (single item)
-    item.discounted_price = get_discounted_price(item, request.user)
-
-    # Initialize bag and box items to None
-    bag_item = None
-    box_item = None
-
-    # If the item has a bag option
-    if item.has_bag_option:
-        # Bag quantity check
-        bag_item = item  # In this case, bag_item refers to the same item with bag options
-
-    # If the item has a box option
-    if item.has_box_option:
-        # Box quantity check
-        box_item = item  # In this case, box_item refers to the same item with box options
-
-    # Calculate the number of available singles, bags, and boxes based on the total stock
-    available_singles = item.quantity_on_hand
-    available_bags = available_singles // item.bag_quantity if bag_item and item.bag_quantity else 0  # Full bags
-    available_boxes = available_singles // item.box_quantity if box_item and item.box_quantity else 0  # Full boxes
-
-    # Remaining singles after using up bags and boxes
-    remaining_singles = available_singles % item.bag_quantity if bag_item else available_singles
-
-    # Fetch item images (if any)
-    images = item.images.all()
-
-    # Prepare the context for rendering the template
-    context = {
-        'item': item,
-        'message': message,
-        'images': images,
-        'bag_item': bag_item,
-        'box_item': box_item,
-        'available_singles': available_singles,
-        'available_bags': available_bags,
-        'available_boxes': available_boxes,
-        'remaining_singles': remaining_singles,
-    }
-
-    return render(request, 'ecommerce/item_detail.html', context)
+# def item_detail(request, item_id):
+#     # Fetch the item based on its ID and ensure it's public
+#     item = get_object_or_404(Item, id=item_id, status='public')
+#
+#     # Default message if the item is not available for purchase
+#     if item.quantity_on_hand < 1:
+#         message = "This item is not available for purchase. Please contact our salespersons."
+#     else:
+#         message = ""
+#
+#     # Calculate the discounted price for the main item (single item)
+#     item.discounted_price = get_discounted_price(item, request.user)
+#
+#     # Initialize bag and box items to None
+#     bag_item = None
+#     box_item = None
+#
+#     # If the item has a bag option
+#     if item.has_bag_option:
+#         # Bag quantity check
+#         bag_item = item  # In this case, bag_item refers to the same item with bag options
+#
+#     # If the item has a box option
+#     if item.has_box_option:
+#         # Box quantity check
+#         box_item = item  # In this case, box_item refers to the same item with box options
+#
+#     # Calculate the number of available singles, bags, and boxes based on the total stock
+#     available_singles = item.quantity_on_hand
+#     available_bags = available_singles // item.bag_quantity if bag_item and item.bag_quantity else 0  # Full bags
+#     available_boxes = available_singles // item.box_quantity if box_item and item.box_quantity else 0  # Full boxes
+#
+#     # Remaining singles after using up bags and boxes
+#     remaining_singles = available_singles % item.bag_quantity if bag_item else available_singles
+#
+#     # Fetch item images (if any)
+#     images = item.images.all()
+#
+#     # Prepare the context for rendering the template
+#     context = {
+#         'item': item,
+#         'message': message,
+#         'images': images,
+#         'bag_item': bag_item,
+#         'box_item': box_item,
+#         'available_singles': available_singles,
+#         'available_bags': available_bags,
+#         'available_boxes': available_boxes,
+#         'remaining_singles': remaining_singles,
+#     }
+#
+#     return render(request, 'ecommerce/item_detail.html', context)
 
 
 from django.contrib import messages
 
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from ecommerce.models import Cart, CartItem, Item
+
+from django.shortcuts import get_object_or_404, redirect
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from ecommerce.models import Cart, CartItem, Item
 
 @login_required
 def add_to_cart(request, item_id):
@@ -253,14 +296,10 @@ def add_to_cart(request, item_id):
 
     if request.method == 'POST':
         requested_quantity = int(request.POST.get('quantity', 0))
-        item_type = request.POST.get('item_type')
+        item_type = request.POST.get('item_type', 'single')
 
         # Calculate total items in the cart for this product, across all types (box, bag, single)
         total_single_equivalent = 0
-
-        print(f"\n--- LOGGING CART AND ITEM DETAILS ---")
-        print(f"Item: {item.manufacturer_sku} ({item.description})")
-        print(f"Requested quantity: {requested_quantity} of type: {item_type}")
 
         # Calculate total single-equivalent items in the cart from box and bag items
         if item.has_box_option:
@@ -286,15 +325,17 @@ def add_to_cart(request, item_id):
         total_available_stock = item.quantity_on_hand
         remaining_stock = total_available_stock - total_single_equivalent
 
-        print(f"Total single-equivalent items in cart: {total_single_equivalent}")
-        print(f"Total available stock: {total_available_stock}")
-        print(f"Remaining stock after cart items: {remaining_stock}")
-
-        # Block further additions if the cart already exceeds available stock
+        # Handle stock validation
         if remaining_stock <= 0:
-            messages.error(request, 'No items are available to add. The cart already exceeds available stock.')
-            print(f"Cart already exceeds stock. Remaining stock: {remaining_stock}\n")
-            return redirect('ecommerce:item_detail', item_id=item_id)
+            response = {
+                'success': False,
+                'message': 'No items are available to add. The cart already exceeds available stock.'
+            }
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(response)
+            else:
+                messages.error(request, response['message'])
+                return redirect('ecommerce:item_detail', item_id=item_id)
 
         # Convert the requested quantity to single-equivalent based on the item_type
         if item_type == 'box' and item.has_box_option:
@@ -304,52 +345,37 @@ def add_to_cart(request, item_id):
         else:
             requested_single_equivalent = requested_quantity
 
-        print(f"Requested single-equivalent quantity: {requested_single_equivalent}")
-
         # Ensure the total requested single-equivalent quantity does not exceed remaining stock
         if requested_single_equivalent > remaining_stock:
-            messages.error(request,
-                           f'Only {remaining_stock} single-equivalent items are available in stock. Please reduce your quantity.')
-            print(
-                f"Attempted to add {requested_single_equivalent} single-equivalent items, but only {remaining_stock} are available.\n")
-            return redirect('ecommerce:item_detail', item_id=item_id)
+            response = {
+                'success': False,
+                'message': f'Only {remaining_stock} single-equivalent items are available in stock. Please reduce your quantity.'
+            }
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(response)
+            else:
+                messages.error(request, response['message'])
+                return redirect('ecommerce:item_detail', item_id=item_id)
 
         # Proceed to add or update items in the cart based on the item_type
-
-        # Handle Box items
         if item_type == 'box' and item.has_box_option:
             box_item = Item.objects.filter(manufacturer_sku=f"{item.system_sku}-Box-{item.box_quantity}").first()
             if box_item:
                 box_cart_item, created = CartItem.objects.get_or_create(cart=cart, item=box_item)
-                if created:
-                    box_cart_item.quantity = requested_quantity
-                else:
-                    box_cart_item.quantity += requested_quantity
+                box_cart_item.quantity = box_cart_item.quantity + requested_quantity if not created else requested_quantity
                 box_cart_item.price = get_discounted_price(box_item, request.user)
                 box_cart_item.save()
-
-                print(f"Added {requested_quantity} boxes (Box of {item.box_quantity}) to the cart.")
-
-        # Handle Bag items
         elif item_type == 'bag' and item.has_bag_option:
             bag_item = Item.objects.filter(manufacturer_sku=f"{item.system_sku}-Bag-{item.bag_quantity}").first()
             if bag_item:
                 bag_cart_item, created = CartItem.objects.get_or_create(cart=cart, item=bag_item)
-                if created:
-                    bag_cart_item.quantity = requested_quantity
-                else:
-                    bag_cart_item.quantity += requested_quantity
+                bag_cart_item.quantity = bag_cart_item.quantity + requested_quantity if not created else requested_quantity
                 bag_cart_item.price = get_discounted_price(bag_item, request.user)
                 bag_cart_item.save()
-
-                print(f"Added {requested_quantity} bags (Bag of {item.bag_quantity}) to the cart.")
-
-        # Handle Single items
         elif item_type == 'single':
             if existing_cart_item:
                 existing_cart_item.quantity += requested_quantity
                 existing_cart_item.save()
-                print(f"Updated quantity of {existing_cart_item.quantity} single items in cart.")
             else:
                 CartItem.objects.create(
                     cart=cart,
@@ -357,18 +383,32 @@ def add_to_cart(request, item_id):
                     quantity=requested_quantity,
                     price=get_discounted_price(item, request.user)
                 )
-                print(f"Added {requested_quantity} single items to the cart.")
-
         else:
-            messages.error(request, 'Invalid item type selected.')
+            response = {
+                'success': False,
+                'message': 'Invalid item type selected.'
+            }
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(response)
+            else:
+                messages.error(request, response['message'])
+                return redirect('ecommerce:item_detail', item_id=item_id)
+
+        # Success response
+        response = {
+            'success': True,
+            'message': f'Added {requested_quantity} of {item.description} to the cart.'
+        }
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse(response)
+        else:
+            messages.success(request, response['message'])
             return redirect('ecommerce:item_detail', item_id=item_id)
 
-        # Log success and redirect to the cart with a success message
-        print(f"Successfully added {requested_quantity} of {item.description} to the cart.\n")
-        messages.success(request, f'Added {requested_quantity} of {item.description} to the cart.')
-        return redirect('ecommerce:cart_detail')
-
     return render(request, 'ecommerce/add_to_cart.html', {'item': item})
+
+
+
 
 
 from decimal import Decimal, ROUND_HALF_UP
@@ -627,7 +667,6 @@ from django.utils import timezone
 SHIPSTATION_API_URL = "https://ssapi.shipstation.com/shipments/getrates"
 SHIPSTATION_USERNAME = "b2806668fbd74c789adf93edf98cda43"
 SHIPSTATION_PASSWORD = "428f6402bbfb40f3afcbf6f06e4f0840"
-CHECKOUT_TIMEOUT = 30  # 5 minutes timeout
 import threading
 
 # Store stock reductions in a global dictionary to restore them if checkout is not completed
@@ -657,6 +696,14 @@ import requests
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 import requests
+
+UPS_ESTIMATED_DELIVERY_TIMES = {
+    "ups_next_day_air": "Next business day by 10:30 a.m., 12:00 p.m., or end of day.",
+    "ups_worldwide_expedited": "2-5 business days for international shipments.",
+    "ups_standard": "Day-definite delivery within 1-5 business days, depending on distance.",
+    "ups_next_day_air_saver": "Next business day by 3:00 p.m. or 4:30 p.m. for commercial destinations.",
+    "ups_next_day_air_early_am": "Next business day early morning delivery, as early as 8:00 a.m."
+}
 
 # Define available box sizes and their limits
 BOXES = [
@@ -755,11 +802,15 @@ def fetch_shipping_rates(payload):
     if response.status_code == 200:
         rates = response.json()
         for rate in rates:
+            estimated_delivery = UPS_ESTIMATED_DELIVERY_TIMES.get(rate["serviceCode"], "Not Available")
+
             shipping_rates.append({
                 "serviceName": rate["serviceName"],
                 "serviceCode": rate["serviceCode"],
                 "shipmentCost": rate["shipmentCost"],
-                "otherCost": rate["otherCost"]
+                "otherCost": rate["otherCost"],
+                "estimatedDelivery": estimated_delivery,
+
             })
     else:
         print("Failed to fetch shipping rates.")
@@ -776,20 +827,29 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 
 
+import logging
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+# Configure a logger for this module
+logger = logging.getLogger(__name__)
+
 @login_required
 def get_shipping_rate(request):
     global flag
     flag = 0
+    logger.info("Entered get_shipping_rate view.")
 
     if request.method == 'POST' and 'get_shipping_rate' in request.POST:
-        # Store form data in session for both 'shipping' and 'pickup' options
+        # Retrieve form data and log the input
         delivery_option = request.POST.get('delivery_option')
         carrier = request.POST.get('carrier', '')
         postal_code = request.POST.get('postal_code', '')
         country_name = request.POST.get('country', '')
 
-        # Save shipping data in session
-        request.session['shipping_data'] = {
+        # Save shipping data in session and log it
+        shipping_data = {
             'carrier': carrier,
             'street': request.POST.get('street', ''),
             'city': request.POST.get('city', ''),
@@ -798,19 +858,23 @@ def get_shipping_rate(request):
             'country': country_name,
             'delivery_option': delivery_option
         }
+        request.session['shipping_data'] = shipping_data
+        logger.info("Stored shipping_data in session: %s", shipping_data)
 
-        # If "Pickup" option is selected, skip the shipping rate API call and set shipping cost to zero
+        # If "Pickup" option is selected, skip API call and set shipping cost to zero
         if delivery_option == "pickup":
             request.session['shipping_cost'] = '0'
             request.session['shipping_service_name'] = ''
             request.session['shipping_rates'] = []  # No rates needed for pickup
             request.session['show_shipping_rates'] = False
+            logger.info("Pickup selected. Set shipping_cost=0, shipping_service_name='' and empty shipping_rates.")
             messages.success(request, "Pickup selected. No shipping rates required.")
-            return redirect('ecommerce:before_payment')  # Redirect to the final review page
+            return redirect('ecommerce:before_payment')
 
-        # Fetch the cart and its items
+        # Fetch the cart and its items, and log the details
         cart = get_object_or_404(Cart, customer=request.user, completed=False)
         cart_items = cart.cartitem_set.all()
+        logger.info("Cart items: %s", cart_items)
 
         # Prepare items for packing
         items = [
@@ -826,35 +890,44 @@ def get_shipping_rate(request):
             }
             for item in cart_items
         ]
+        logger.info("Prepared items for packing: %s", items)
 
         # Pack items into boxes
         packed_boxes, leftover_items = pack_items_in_boxes(items, BOXES)
-
-        # If there are leftover items, show an error and redirect
         if leftover_items:
+            logger.error("Leftover items encountered during packing: %s", leftover_items)
             messages.error(request, "Some items couldn't fit in any box size available.")
             return redirect('ecommerce:cart_detail')
 
-        # Map the full country name to ISO code
+        # Map full country name to ISO code
         country_codes = {"Canada": "CA", "United States": "US"}
-        country_code = country_codes.get(country_name, "CA")  # Default to CA if not found
+        country_code = country_codes.get(country_name, "CA")
+        logger.info("Using country code: %s", country_code)
 
         # Prepare payload and fetch shipping rates
-        shipping_request_payload = prepare_shipping_request_with_packages(packed_boxes, carrier, postal_code,
-                                                                          country_code)
+        shipping_request_payload = prepare_shipping_request_with_packages(packed_boxes, carrier, postal_code, country_code)
+        logger.info("Shipping request payload: %s", shipping_request_payload)
         shipping_rates = fetch_shipping_rates(shipping_request_payload)
+        logger.info("Fetched shipping rates: %s", shipping_rates)
 
-        # Store the fetched rates in the session
+        # Store the fetched rates in the session and log the update
         request.session['shipping_rates'] = shipping_rates
         request.session['show_shipping_rates'] = True
+        logger.info("Updated session with shipping_rates and set show_shipping_rates to True.")
 
         messages.success(request, "Shipping rates fetched successfully.")
-        return render(request, 'ecommerce/get_shipping.html',
-                      {'shipping_rates': shipping_rates, 'show_shipping_rates': True})
+        return render(request, 'ecommerce/get_shipping.html', {
+            'shipping_rates': shipping_rates,
+            'show_shipping_rates': True
+        })
 
-    # Render the form with saved delivery option data if available
+    # For GET requests, retrieve any saved delivery option from session and log it
     saved_delivery_option = request.session.get('shipping_data', {}).get('delivery_option', '')
-    return render(request, 'ecommerce/get_shipping.html', {'saved_delivery_option': saved_delivery_option})
+    logger.info("GET request in get_shipping_rate view. Saved delivery option: %s", saved_delivery_option)
+    return render(request, 'ecommerce/get_shipping.html', {
+        'saved_delivery_option': saved_delivery_option
+    })
+
 
 
 CHECKOUT_TIMEOUT = 200  # 5 minutes timeout
@@ -867,12 +940,11 @@ def checkout(request):
         messages.error(request, "Your checkout session has timed out. Please try again.")
         return redirect('ecommerce:cart_detail')
 
-
-
     print("Starting checkout process")
     cart = get_object_or_404(Cart, customer=request.user, completed=False)
     cart_items = cart.cartitem_set.all()
     print("Cart items:", cart_items)
+
     # Calculate subtotal, total discount, HST, and total price with HST
     subtotal = sum(item.price * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     total_discount = sum((item.item.price_default - item.price) * item.quantity for item in cart_items).quantize(
@@ -906,16 +978,14 @@ def checkout(request):
                 box_quantity = parent_item.box_quantity
                 single_equivalent = box_quantity * cart_item.quantity
                 parent_item_totals[parent_item.manufacturer_sku] += single_equivalent
-                print(
-                    f"Box: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
+                print(f"Box: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
 
             # Handle bag items
             elif 'Bag' in item.manufacturer_sku and parent_item.bag_quantity:
                 bag_quantity = parent_item.bag_quantity
                 single_equivalent = bag_quantity * cart_item.quantity
                 parent_item_totals[parent_item.manufacturer_sku] += single_equivalent
-                print(
-                    f"Bag: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
+                print(f"Bag: {item.manufacturer_sku}, Quantity: {cart_item.quantity}, Single Equivalent: {single_equivalent}")
 
             # Handle single items
             else:
@@ -937,8 +1007,7 @@ def checkout(request):
             if item.quantity_on_hand < total_quantity:
                 messages.error(request,
                                f"Insufficient stock for item {item.description}. Only {item.quantity_on_hand} available.")
-                print(
-                    f"Stock insufficient for {item.system_sku}. Available: {item.quantity_on_hand}, Required: {total_quantity}")
+                print(f"Stock insufficient for {item.system_sku}. Available: {item.quantity_on_hand}, Required: {total_quantity}")
                 return redirect('ecommerce:cart_detail')
 
             # Reduce stock and store the reduction
@@ -950,6 +1019,35 @@ def checkout(request):
         # Store stock reductions in the global checkout_reservations dictionary
         checkout_reservations[f'checkout_{cart.id}'] = reduced_stock
         return redirect('ecommerce:checkout')
+
+    ####### ADDITIONAL CODE: UPDATE RESERVATION IF USER ADDED NEW ITEMS #######
+
+    # Check for new or modified items in cart
+    reserved_stock = checkout_reservations.get(f'checkout_{cart.id}', {})
+    new_reservations = {}
+
+    for cart_item in cart_items:
+        item = cart_item.item
+        parent_item = item.parent_item if item.parent_item else item
+
+        reserved_quantity = reserved_stock.get(parent_item.system_sku, 0)
+        current_needed = cart_item.quantity
+
+        if current_needed > reserved_quantity:
+            # Additional stock needs to be reserved
+            additional_needed = current_needed - reserved_quantity
+            if parent_item.quantity_on_hand < additional_needed:
+                messages.error(request, f"Not enough stock for {parent_item.description}. Available: {parent_item.quantity_on_hand}.")
+                return redirect('ecommerce:cart_detail')
+
+            parent_item.quantity_on_hand -= additional_needed
+            parent_item.save()
+            new_reservations[parent_item.system_sku] = additional_needed
+
+    # Update global checkout reservations with new stock adjustments
+    checkout_reservations[f'checkout_{cart.id}'] = {**reserved_stock, **new_reservations}
+
+    ####### END OF ADDITIONAL CODE #######
 
     # Define the timeout behavior for restoring stock
     def restore_stock_if_not_completed(cart_id, reduced_stock):
@@ -997,6 +1095,7 @@ def checkout(request):
     return render(request, 'ecommerce/checkout.html', context)
 
 
+
 @login_required
 def confirm_shipping_method(request):
     remaining_time = get_remaining_time(request, CHECKOUT_TIMEOUT)
@@ -1026,12 +1125,23 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth.decorators import login_required
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
+import logging
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.contrib.auth.decorators import login_required
-from .models import Cart  # Adjust this import based on your app structure
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 
+# Configure logger for this module
+logger = logging.getLogger(__name__)
+
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+import logging
+
+# Configure a logger for this module
+logger = logging.getLogger(__name__)
 
 @login_required
 def before_payment(request):
@@ -1040,12 +1150,12 @@ def before_payment(request):
     if remaining_time <= 0:
         messages.error(request, "Your checkout session has timed out. Please try again.")
         return redirect('ecommerce:cart_detail')
-    print("Starting checkout process")
+    logger.info("Starting checkout process in before_payment view.")
 
     # Fetch the user's cart and cart items
     cart = get_object_or_404(Cart, customer=request.user, completed=False)
     cart_items = cart.cartitem_set.all()
-    print("Cart items:", cart_items)
+    logger.info("Cart items: %s", cart_items)
 
     # Calculate subtotal, total discount, HST, and total price with HST
     subtotal = sum(item.price * item.quantity for item in cart_items).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -1055,39 +1165,52 @@ def before_payment(request):
     hst = (subtotal * hst_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     total_with_hst = (subtotal + hst).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    print(
-        f"Calculated totals: Subtotal={subtotal}, Total Discount={total_discount}, HST={hst}, Total with HST={total_with_hst}")
+    logger.info("Calculated totals: Subtotal=%s, Total Discount=%s, HST=%s, Total with HST=%s",
+                subtotal, total_discount, hst, total_with_hst)
 
-    # Retrieve shipping data and determine shipping cost based on the selected delivery option
+    # Retrieve shipping data from session
     shipping_data = request.session.get('shipping_data', {})
+    logger.info("Initial shipping_data from session: %s", shipping_data)
     if shipping_data.get('delivery_option') == 'pickup':
-        shipping_cost = Decimal('0.00')  # Set to zero if pickup is selected
+        shipping_cost = Decimal('0.00')
     else:
-        shipping_cost = Decimal(request.session.get('shipping_cost', '0'))  # Default to 0 if not set
+        shipping_cost = Decimal(request.session.get('shipping_cost', '0'))
+    logger.info("Initial shipping_cost from session: %s", shipping_cost)
 
     # Recalculate the total with HST and shipping
     total_with_hst_and_shipping = (total_with_hst + shipping_cost).quantize(Decimal('0.01'))
 
-    # Handle manual update of shipping cost (for instance, if entered manually)
-    if request.method == 'POST' and 'x' in request.POST:
-        manual_shipping_cost = request.POST.get('manual_shipping_cost')
-        shipping_service_name = request.POST.get('shipping_service_name')  # Retrieve the service name
+    # Check if shipping selection form was submitted and update shipping data
+    if request.method == 'POST' and 'manual_shipping_cost' in request.POST:
+        raw_shipping_cost = request.POST.get('manual_shipping_cost')
+        shipping_service_name = request.POST.get('shipping_service_name')
+        logger.info("POST data received: manual_shipping_cost=%s, shipping_service_name=%s",
+                    raw_shipping_cost, shipping_service_name)
 
-        if manual_shipping_cost:
+        if raw_shipping_cost:
+            # Remove any dollar signs or extra whitespace
+            cleaned_cost = raw_shipping_cost.replace('$', '').strip()
             try:
-                shipping_cost = Decimal(manual_shipping_cost)
-                request.session['shipping_cost'] = str(shipping_cost)  # Store as string in session
-                request.session['shipping_service_name'] = shipping_service_name  # Store service name in session
+                shipping_cost = Decimal(cleaned_cost)
+                request.session['shipping_cost'] = str(shipping_cost)
+                request.session['shipping_service_name'] = shipping_service_name
+                logger.info("Updated session: shipping_cost=%s, shipping_service_name=%s", shipping_cost, shipping_service_name)
                 messages.success(request,
                                  f"Shipping cost updated to ${shipping_cost} with service {shipping_service_name}.")
             except InvalidOperation:
                 messages.error(request, "Invalid shipping cost entered.")
-                return redirect('ecommerce:before_payment')  # Reload to avoid invalid state
+                logger.error("Invalid shipping cost entered: %s", raw_shipping_cost)
+                return redirect('ecommerce:before_payment')
+            # Recalculate total with the new shipping cost
+            total_with_hst_and_shipping = (total_with_hst + shipping_cost).quantize(Decimal('0.01'))
+        else:
+            logger.warning("No manual_shipping_cost provided in POST.")
 
-        # Update the total with the new shipping cost
-        total_with_hst_and_shipping = total_with_hst + shipping_cost
+    logger.info("Final session data: shipping_cost=%s, shipping_service_name=%s",
+                request.session.get('shipping_cost'), request.session.get('shipping_service_name'))
+    logger.info("Final total_with_hst_and_shipping: %s", total_with_hst_and_shipping)
 
-    # Context data to pass to the template
+    # Prepare context for the template
     context = {
         'cart': cart,
         'subtotal': subtotal,
@@ -1095,15 +1218,15 @@ def before_payment(request):
         'hst': hst,
         'total_with_hst': total_with_hst,
         'cart_items': cart_items,
-        'shipping_cost': shipping_cost,  # Shipping cost to display in the template
+        'shipping_cost': shipping_cost,
         'total_with_hst_and_shipping': total_with_hst_and_shipping,
         'shipping_service_name': request.session.get('shipping_service_name', ''),
         'delivery_option': shipping_data.get('delivery_option', ''),
         'remaining_time': remaining_time,
-
     }
 
     return render(request, 'ecommerce/before_payment.html', context)
+
 
 
 
@@ -1579,6 +1702,7 @@ from django.conf import settings
 def order_confirmation(request, order_id):
     order = get_object_or_404(Order, id=order_id)
     cart_items = order.cart.cartitem_set.all()
+    customer = order.customer
 
     # External logo URL
     logo_url = 'https://www.mekcosupply.com/wp-content/uploads/2020/07/Mekco-Supply-logo-300-pix-2020.jpg'
@@ -1593,6 +1717,7 @@ def order_confirmation(request, order_id):
         'total_with_hst': order.total_with_hst,
         'total_with_hst_and_shipping': order.total_with_hst_and_shipping,
         'logo_url': logo_url,  # Pass the logo URL to the context
+
     }
 
     # Render the HTML content for the order confirmation email
@@ -2019,12 +2144,43 @@ from django.shortcuts import render, get_object_or_404
 from .models import Order, OrderItem
 from .forms import OrderStatusForm
 
-def order_detail(request, order_id):
-    # Fetch the order by ID
-    order = get_object_or_404(Order, id=order_id)
-    order_items = order.items.all() # 'items' is the related_name in OrderItem
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from django.contrib import messages
+from django.db.models import Sum
+from decimal import Decimal
+from django.contrib.auth.decorators import login_required
 
-    # Prepare the form to update the order's status
+# Import your Order model and OrderStatusForm as needed
+from ecommerce.models import Order
+from ecommerce.forms import OrderStatusForm
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from ecommerce.models import Order
+from ecommerce.forms import OrderStatusForm  # Make sure this is correctly imported
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from ecommerce.models import Order
+from ecommerce.forms import OrderStatusForm
+
+
+@login_required
+def order_detail(request, order_id):
+    # Retrieve the order, ensuring it belongs to the logged-in user
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    order_items = order.items.all()  # This uses the related_name defined in OrderItem
+
+    # Build a customer display name using first and last names, fallback to email if needed.
+    customer = order.customer
+    customer_name = (f"{customer.first_name} {customer.last_name}".strip()
+                     if (customer.first_name or customer.last_name)
+                     else customer.email)
+
+    # Handle order status update form
     if request.method == 'POST':
         form = OrderStatusForm(request.POST, instance=order)
         if form.is_valid():
@@ -2034,16 +2190,13 @@ def order_detail(request, order_id):
     else:
         form = OrderStatusForm(instance=order)
 
-    return render(request, 'ecommerce/order_detail.html', {
+    context = {
         'order': order,
-        'order_items': order.items.all(),
+        'order_items': order_items,
+        'customer_name': customer_name,
         'form': form,
-    })
-
-
-
-
-
+    }
+    return render(request, 'ecommerce/order_detail.html', context)
 
 
 from django.core.mail import send_mail
@@ -2111,16 +2264,135 @@ def orders_with_returns_view(request):
     return render(request, 'ecommerce/orders_with_returns.html', context)
 
 
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
+import paypalrestsdk
+from ecommerce.models import Order, OrderItem
+
+from ecommerce.models import ReturnRequest
+
+from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
+import paypalrestsdk
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @staff_member_required
 def return_requests_by_order_view(request, order_id):
+    logger = logging.getLogger(__name__)
     order = get_object_or_404(Order, id=order_id)
     return_requests = ReturnRequest.objects.filter(order=order)
 
+    # Calculate total approved refund amount
+    total_approved_refund = sum(
+        request_item.refund_amount or 0 for request_item in return_requests if request_item.status == 'approved'
+    )
+
+    if request.method == "POST":
+        paypal_sale_id = request.POST.get("paypal_sale_id", "").strip()
+        logger.info(f"Processing refunds for order {order.order_number}, PayPal Sale ID: {paypal_sale_id}")
+
+        if not paypal_sale_id:
+            logger.error("Missing PayPal Sale ID.")
+            messages.error(request, "Refund failed: Missing PayPal Sale ID.")
+            return redirect('ecommerce:return_requests_by_order', order_id=order_id)
+
+        try:
+            # Configure PayPal SDK
+            paypalrestsdk.configure({
+                "mode": settings.PAYPAL_MODE,
+                "client_id": settings.PAYPAL_CLIENT_ID,
+                "client_secret": settings.PAYPAL_SECRET_KEY,
+            })
+            logger.info("PayPal SDK configured.")
+
+            # Fetch PayPal sale details
+            logger.debug(f"Fetching sale details for PayPal Sale ID: {paypal_sale_id}")
+            sale = paypalrestsdk.Sale.find(paypal_sale_id)
+
+            # Log the PayPal sale details for debugging
+            if not sale or not hasattr(sale, 'amount'):
+                raise ValueError("Invalid or incomplete sale object returned from PayPal API.")
+
+            logger.debug(f"PayPal Sale Object: {sale.__dict__}")
+
+        except Exception as e:
+            logger.error(f"Error fetching PayPal sale details: {str(e)}")
+            messages.error(request, "Could not fetch PayPal sale details. Refunds not processed.")
+            return redirect('ecommerce:return_requests_by_order', order_id=order_id)
+
+        # Process each return request
+        for request_item in return_requests:
+            # Skip already approved requests to prevent duplication
+            if request_item.status == 'approved':
+                logger.warning(f"Refund for item {request_item.item.description} (Request ID: {request_item.id}) "
+                               f"already approved. Skipping.")
+                continue
+
+            refund_status = request.POST.get(f'status_{request_item.id}', '').strip()
+            denied_reason = request.POST.get(f'denied_reason_{request_item.id}', '').strip()
+
+            logger.info(f"Processing refund for item {request_item.item.description} (Request ID: {request_item.id})")
+            logger.debug(f"Refund status: {refund_status}, Denied reason: {denied_reason}")
+
+            # Update refund status
+            request_item.status = refund_status
+            if refund_status == 'denied':
+                request_item.denied_reason = denied_reason
+                request_item.save()
+                logger.info(f"Refund for item {request_item.item.description} denied: {denied_reason}")
+                continue
+
+            if refund_status == 'approved':
+                refund_amount = request_item.refund_amount or 0.0
+
+                try:
+                    # Process refund
+                    refund = sale.refund({
+                        "amount": {
+                            "total": f"{refund_amount:.2f}",
+                            "currency": "CAD",
+                        }
+                    })
+
+                    if refund.success():
+                        logger.info(f"Refund approved for {request_item.item.description}: ${refund_amount:.2f}")
+                        request_item.status = 'approved'
+                        request_item.denied_reason = ''
+                        request_item.save()
+                        total_approved_refund += refund_amount  # Update total approved refund
+                        messages.success(request,
+                                         f"Refund of ${refund_amount:.2f} for {request_item.item.description} approved.")
+                    else:
+                        error_message = refund.error.get('message', 'Unknown error') if hasattr(refund,
+                                                                                                'error') else 'Unknown error'
+                        logger.error(f"Refund failed for {request_item.item.description}: {error_message}")
+                        request_item.status = 'denied'
+                        request_item.denied_reason = error_message
+                        request_item.save()
+                        messages.error(request, f"Refund failed for {request_item.item.description}: {error_message}")
+                except Exception as e:
+                    logger.exception(f"Error processing refund for {request_item.item.description}: {str(e)}")
+                    request_item.status = 'denied'
+                    request_item.denied_reason = str(e)
+                    request_item.save()
+                    messages.error(request, f"Refund failed for {request_item.item.description}: {str(e)}")
+
+        return redirect('ecommerce:return_requests_by_order', order_id=order_id)
+
+    # Pass necessary data to the template
     context = {
         'order': order,
         'return_requests': return_requests,
+        'total_approved_refund': total_approved_refund,  # Include total approved refund
     }
     return render(request, 'ecommerce/return_requests_by_order.html', context)
+
 
 
 from django.shortcuts import redirect, get_object_or_404
@@ -2221,8 +2493,6 @@ def paypal_payment(request):
         return render(request, "ecommerce/error.html", {"error": payment.error})
 
 
-
-
 @login_required
 def execute_payment(request):
     payment_id = request.GET.get('paymentId')
@@ -2242,15 +2512,18 @@ def execute_payment(request):
     # Execute the payment
     payment = paypalrestsdk.Payment.find(payment_id)
     if payment.execute({"payer_id": payer_id}):
-        # Payment succeeded, automatically place the order
-        return place_order(request)
+        # Extract the sale ID
+        sale_id = payment.transactions[0].related_resources[0].sale.id
+
+        # Payment succeeded, place the order with the sale ID
+        return place_order(request, sale_id=sale_id)
     else:
         messages.error(request, "Payment failed. Please try again.")
         return render(request, "ecommerce/error.html", {"error": payment.error})
 
 
 @login_required
-def place_order(request):
+def place_order(request, sale_id=None):
     # Verify that payment was successful
     if not request.session.get('payment_success', True):
         messages.error(request, "Please complete your payment before placing your order.")
@@ -2279,7 +2552,8 @@ def place_order(request):
         'delivery_option': request.session.get('shipping_data', {}).get('delivery_option', ''),
         'order_number': str(uuid.uuid4().hex),
         'order_time': timezone.now(),
-        'total_price': subtotal  # Set the total_price here
+        'total_price': subtotal,  # Set the total_price here
+        'paypal_sale_id': sale_id  # Save the sale ID here
     }
 
     # Add address fields if delivery option is not pickup
@@ -2334,6 +2608,7 @@ def place_order(request):
     return redirect('ecommerce:order_confirmation', order_id=order.id)
 
 
+
 def cancel_payment(request):
     return render(request, 'ecommerce/cancel.html', {'message': 'Your payment has been cancelled.'})
 
@@ -2344,3 +2619,272 @@ def success_view(request):
 
 def error_view(request):
     return render(request, "ecommerce/error.html")
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+import paypalrestsdk
+from decimal import Decimal
+
+@login_required
+def refund_order_item(request, order_item_id):
+    # Retrieve the order item
+    order_item = get_object_or_404(OrderItem, id=order_item_id, order__customer=request.user)
+
+    # Ensure valid refund request
+    if order_item.return_quantity <= 0 or order_item.refund_status != 'pending':
+        messages.error(request, "Invalid or already processed refund request.")
+        return redirect('ecommerce:order_detail', order_id=order_item.order.id)
+
+    # Calculate the refund amount
+    refund_amount = order_item.return_quantity * order_item.discounted_price
+
+    # Configure PayPal SDK
+    paypalrestsdk.configure({
+        "mode": settings.PAYPAL_MODE,
+        "client_id": settings.PAYPAL_CLIENT_ID,
+        "client_secret": settings.PAYPAL_SECRET_KEY
+    })
+
+    # Find the PayPal sale
+    sale = paypalrestsdk.Sale.find(order_item.order.paypal_sale_id)
+
+    # Attempt to refund
+    refund = sale.refund({
+        "amount": {
+            "total": str(refund_amount),
+            "currency": "CAD"
+        }
+    })
+
+    if refund.success():
+        # Update the order item refund details
+        order_item.refund_status = 'approved'
+        order_item.refund_amount = refund_amount
+        order_item.save()
+
+        messages.success(request, f"Refund for {order_item.return_quantity} items approved, total refunded: ${refund_amount}.")
+    else:
+        # Mark the refund as denied
+        order_item.refund_status = 'denied'
+        order_item.save()
+
+        messages.error(request, f"Refund failed: {refund.error}")
+
+    return redirect('ecommerce:order_detail', order_id=order_item.order.id)
+
+
+
+from django.http import JsonResponse
+from django.http import JsonResponse
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import OrderItem
+
+
+
+from django.shortcuts import render, get_object_or_404
+from oauth_handler.models import Category, Item
+
+from django.shortcuts import render, get_object_or_404, redirect
+from oauth_handler.models import Category
+from django.shortcuts import render, get_object_or_404
+from oauth_handler.models import Category, Item
+from django.shortcuts import render, get_object_or_404
+from oauth_handler.models import Category
+
+from django.shortcuts import render, get_object_or_404, redirect
+from oauth_handler.models import Category
+
+def item_list(request):
+    # Fetch all root categories (these are shown when no category is selected)
+    categories = Category.objects.filter(parent=None).prefetch_related('children').order_by('name')
+
+    # Fetch query parameters
+    category_query = request.GET.get('category', '')
+
+    selected_category = None
+    subcategories = None
+    full_category_path = []
+    sidebar_categories = categories  # Default to root categories for sidebar
+
+    if category_query:
+        # Fetch the selected category
+        selected_category = get_object_or_404(Category, id=category_query)
+
+        # Fetch its subcategories
+        subcategories = selected_category.children.all().order_by('name')
+
+        # Build full category path (breadcrumb trail)
+        ancestor = selected_category
+        while ancestor:
+            full_category_path.insert(0, ancestor)
+            ancestor = ancestor.parent
+
+        # Determine sidebar categories:
+        # - If the selected category has subcategories, show them
+        # - Otherwise, show the siblings of the selected category
+        if subcategories.exists():
+            sidebar_categories = subcategories
+        else:
+            sidebar_categories = Category.objects.filter(parent=selected_category.parent).order_by('name')
+
+        # Redirect to items page if no subcategories
+        if not subcategories.exists():
+            return redirect('ecommerce:items_list', category_id=selected_category.id)
+
+    context = {
+        'categories': categories,  # Root categories for other parts of the page
+        'selected_category': selected_category,
+        'subcategories': subcategories,
+        'full_category_path': full_category_path,
+        'sidebar_categories': sidebar_categories,  # Sidebar updates dynamically
+    }
+
+    return render(request, 'ecommerce/test.html', context)
+
+
+
+
+
+from django.shortcuts import render, get_object_or_404
+from oauth_handler.models import Category, Item
+
+from django.shortcuts import render, get_object_or_404
+from oauth_handler.models import Category, Item
+
+
+def items_list_view(request, category_id):
+    # Fetch the category
+    category = get_object_or_404(Category, id=category_id)
+
+    # Fetch items under this category
+    items = Item.objects.filter(category=category)
+
+    # Process items to include discounted price and bag/box options
+    for item in items:
+        # Add discounted price to each item
+        item.discounted_price = get_discounted_price(item, request.user)
+
+        # Check and set bag and box options
+        item.has_bag_option = item.has_bag_option
+        item.has_box_option = item.has_box_option
+
+    # Determine sidebar categories
+    if category.children.exists():
+        sidebar_categories = category.children.all().order_by('name')
+    else:
+        sidebar_categories = Category.objects.filter(parent=category.parent).order_by('name')
+
+    # Build full category path for breadcrumbs
+    full_category_path = []
+    ancestor = category
+    while ancestor:
+        full_category_path.insert(0, ancestor)
+        ancestor = ancestor.parent
+
+    context = {
+        'category': category,
+        'items': items,  # Now includes discounted price and options
+        'sidebar_categories': sidebar_categories,  # Update sidebar dynamically
+        'full_category_path': full_category_path,
+    }
+
+    return render(request, 'ecommerce/testitems.html', context)
+
+
+
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Item, Cart, CartItem
+
+@login_required
+def item_detail(request, item_id):
+    # Fetch the item based on its ID and ensure it's public
+    item = get_object_or_404(Item, id=item_id, status='public')
+
+    # Default message if the item is not available for purchase
+    if item.quantity_on_hand < 1:
+        message = "This item is not available for purchase. Please contact our salespersons."
+    else:
+        message = ""
+
+    # Calculate the discounted price for the main item (single item)
+    item.discounted_price = get_discounted_price(item, request.user)
+
+    # Calculate bag and box availability
+    available_singles = item.quantity_on_hand
+    available_bags = (
+        available_singles // item.bag_quantity if item.has_bag_option and item.bag_quantity else 0
+    )
+    available_boxes = (
+        available_singles // item.box_quantity if item.has_box_option and item.box_quantity else 0
+    )
+
+    success_message = None
+    error_message = None
+
+    if request.method == 'POST':
+        item_type = request.POST.get('item_type', 'single')
+        quantity = int(request.POST.get('quantity', 1))
+
+        # Calculate the total quantity based on item type
+        if item_type == 'box' and item.has_box_option:
+            total_quantity = quantity * item.box_quantity
+        elif item_type == 'bag' and item.has_bag_option:
+            total_quantity = quantity * item.bag_quantity
+        else:
+            total_quantity = quantity
+
+        # Validate stock availability
+        if total_quantity > item.quantity_on_hand:
+            error_message = 'Not enough stock available.'
+        else:
+            try:
+                # Create or update the cart
+                cart, created = Cart.objects.get_or_create(customer=request.user, completed=False)
+                cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
+                cart_item.quantity += total_quantity
+                cart_item.save()
+                success_message = f'{quantity} {item_type}(s) of "{item.description}" added to your cart.'
+            except Exception as e:
+                error_message = f"An error occurred while adding the item to the cart: {str(e)}"
+
+    # Fetch item images (if any)
+    images = item.images.all()
+
+    # Build the full category path for breadcrumbs
+    full_category_path = []
+    ancestor = item.category
+    while ancestor:
+        full_category_path.insert(0, ancestor)
+        ancestor = ancestor.parent
+
+    # Prepare the context for rendering the template
+    context = {
+        'item': item,
+        'message': message,
+        'images': images,
+        'available_singles': available_singles,
+        'available_bags': available_bags,
+        'available_boxes': available_boxes,
+        'success_message': success_message,
+        'error_message': error_message,
+        'full_category_path': full_category_path,  # Pass the full category path for breadcrumbs
+    }
+
+    return render(request, 'ecommerce/test_detail.html', context)
+
+
+def test_cart(request):
+    return render(request, 'ecommerce/testcart.html')
+
+
+
+

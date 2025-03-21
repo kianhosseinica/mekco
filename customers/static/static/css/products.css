@@ -1,0 +1,349 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #fff;
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Top Bar */
+.top-bar {
+    background-color: #3f4141;
+    color: #fff;
+    padding: 5px 20px;
+    font-size: 14px;
+    text-align: right;
+}
+
+.top-bar-icons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.top-bar-icons .top-icon i {
+    font-size: 16px;
+    color: #00bbbc;
+    transition: transform 0.3s ease;
+}
+
+.top-bar-icons .top-icon i:hover {
+    transform: scale(1.1);
+}
+
+/* Hide the top bar on mobile screens */
+@media (max-width: 768px) {
+    .top-bar {
+        display: none;
+    }
+}
+
+/* Hero Section */
+.hero {
+    position: relative;
+    overflow: hidden;
+    height: 70px;
+    background: linear-gradient(135deg, #00bbbc, #3f4141);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.hero-overlay h1 {
+    font-size: 3em;
+    font-weight: bold;
+    text-align: center;
+    animation: fadeInOut 5s infinite;
+}
+
+@media (max-width: 768px) {
+    .hero-overlay h1 {
+        font-size: 2.5em;
+    }
+}
+
+/* Header */
+.header {
+    background-color: #3f4141;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header .logo img {
+    width: 80px;
+}
+
+.search-bar {
+    flex-grow: 1;
+    margin: 0 20px;
+    position: relative;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.search-bar i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.menu-btn {
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+    background-color: #f1f1f1;
+    padding: 10px 20px;
+    font-size: 14px;
+    margin: 20px auto;
+    width: 95%;
+    border-radius: 5px;
+}
+
+.breadcrumb a {
+    color: #00bbbc;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+/* Content */
+.content {
+    flex: 1;
+    margin: 20px auto;
+    max-width: 1200px;
+    padding: 10px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Default: 4 columns for desktop and tablets */
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: repeat(4, 1fr); /* Tablets: 4 columns */
+    }
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr); /* Mobile: 2 columns */
+    }
+}
+
+/* Grid Items */
+/* General Styles for Grid Items */
+/* Grid Items */
+.grid-item {
+    background: rgba(0, 187, 188, 0.1);
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 5px; /* Reduced padding */
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font-size: 12px; /* Smaller font size */
+}
+
+/* Image Styling */
+.grid-item img {
+    width: 100%; /* Full width of the grid item */
+    aspect-ratio: 1 / 1; /* Enforces square dimensions */
+    object-fit: contain; /* Ensures the entire image is visible within the square */
+    border-radius: 5px; /* Optional: Rounded corners for modern look */
+    background-color: #f9f9f9; /* Optional: Background for better contrast if the image doesn't fill */
+}
+
+
+
+
+/* Title Styling */
+.grid-item h3 {
+    margin: 5px 0; /* Reduced margin */
+    font-size: 14px; /* Smaller font size */
+    font-weight: bold;
+    color: #333;
+    line-height: 1.2; /* Adjusted line height */
+}
+
+/* Product Details Container */
+.product-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px; /* Reduced gap */
+}
+
+/* Price Styling */
+.price {
+    font-size: 14px;
+    font-weight: bold;
+    color: #007b9b;
+    text-align: center;
+    margin: 5px 0;
+}
+
+/* Product Input Bar */
+.product-input-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.product-input-bar select,
+.product-input-bar input,
+.product-input-bar button {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 12px;
+}
+
+.product-input-bar select {
+    background-color: white;
+}
+
+.product-input-bar input {
+    text-align: center;
+}
+
+.product-input-bar button {
+    background-color: #00bbbc;
+    color: white;
+    cursor: pointer;
+    border: none;
+}
+
+.product-input-bar button:hover {
+    background-color: #007b9b;
+}
+
+/* Grid Configuration */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 columns for desktop and tablet */
+    gap: 10px; /* Reduced gap between grid items */
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns for mobile */
+        gap: 8px; /* Adjusted gap for mobile */
+    }
+}
+
+/* Footer (Fixed at Bottom) */
+.footer {
+    background-color: #3f4141;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 12px; /* Smaller font size */
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+}
+
+
+/* Sliding Menu */
+.side-menu {
+    position: fixed;
+    top: 0;
+    right: -250px;
+    width: 250px;
+    height: 100%;
+    background-color: #3f4141;
+    color: #fff;
+    padding: 20px;
+    transition: right 0.4s ease-in-out;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.side-menu.open {
+    right: 0;
+}
+
+.side-menu .close-btn {
+    text-align: right;
+    font-size: 28px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.side-menu h3 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #00bbbc;
+    padding-bottom: 10px;
+}
+
+.side-menu a {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #555;
+    transition: color 0.3s ease;
+}
+
+.side-menu a i {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.side-menu a:hover {
+    color: #00bbbc;
+}
+
+.side-menu-icons {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 20px;
+    border-top: 1px solid #555;
+}
+
+.side-menu-icons .menu-icon i {
+    font-size: 20px;
+    color: #00bbbc;
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.side-menu-icons .menu-icon i:hover {
+    transform: scale(1.1);
+    color: #fff;
+}

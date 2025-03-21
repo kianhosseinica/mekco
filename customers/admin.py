@@ -2,10 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import Customer, Address
 
-
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import Customer
+class AddressInline(admin.TabularInline):  # Use TabularInline for a table-like layout
+    model = Address
+    extra = 1  # Number of empty forms to display for new addresses
+    fields = ('street', 'city', 'province', 'postal_code', 'country')  # Fields to display in the inline form
 
 class CustomCustomerAdmin(UserAdmin):
     model = Customer
@@ -25,12 +25,12 @@ class CustomCustomerAdmin(UserAdmin):
     )
     search_fields = ('email', 'phone_number', 'first_name', 'last_name')
     ordering = ('email',)
-
-admin.site.register(Customer, CustomCustomerAdmin)
-
-
+    inlines = [AddressInline]  # Add the AddressInline to allow address editing inline
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('customer', 'street', 'city', 'province', 'postal_code', 'country')
     search_fields = ('customer__email', 'street', 'city', 'province', 'postal_code', 'country')
+
+# Register the CustomerAdmin with the modified inline
+admin.site.register(Customer, CustomCustomerAdmin)

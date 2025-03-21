@@ -143,78 +143,85 @@
     {% endif %}
 
     <div class="signup-container">
-        <h1>Signup</h1>
-        <form method="post" id="signup-form">
-            {% csrf_token %}
+    <h1>Signup</h1>
+    <form method="post" id="signup-form">
+        {% csrf_token %}
 
-            <!-- Email field -->
-            <div class="mb-3">
-                <label class="form-label" for="id_email">Email</label>
-                <input type="email" name="email" class="form-control" value="{{ form.email.value|default_if_none:'' }}" required>
-                {% if form.email.errors %}
-                    <div class="text-danger">{{ form.email.errors|join:", " }}</div>
-                {% endif %}
-            </div>
+        <!-- Email field -->
+        <div class="mb-3">
+            <label class="form-label" for="id_email">Email</label>
+            <input type="email" name="email" id="id_email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" value="{{ form.email.value|default_if_none:'' }}" required>
+            {% if form.email.errors %}
+                <div class="invalid-feedback">{{ form.email.errors|join:", " }}</div>
+            {% endif %}
+        </div>
 
-            <!-- Phone number field -->
-            <div class="mb-3">
-                <label class="form-label" for="id_phone_number">Phone Number</label>
-                <input type="text" name="phone_number" class="form-control" value="{{ form.phone_number.value|default_if_none:'' }}" required>
-                {% if form.phone_number.errors %}
-                    <div class="text-danger">{{ form.phone_number.errors|join:", " }}</div>
-                {% endif %}
-            </div>
+        <!-- Phone number field -->
+        <div class="mb-3">
+            <label class="form-label" for="id_phone_number">Phone Number</label>
+            <input type="text" name="phone_number" id="id_phone_number" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" value="{{ form.phone_number.value|default_if_none:'' }}" required>
+            {% if form.phone_number.errors %}
+                <div class="invalid-feedback">{{ form.phone_number.errors|join:", " }}</div>
+            {% endif %}
+        </div>
 
-            <!-- First name field -->
-            <div class="mb-3">
-                <label class="form-label" for="id_first_name">First Name</label>
-                <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default_if_none:'' }}" required>
-                {% if form.first_name.errors %}
-                    <div class="text-danger">{{ form.first_name.errors|join:", " }}</div>
-                {% endif %}
-            </div>
+        <!-- First Name field -->
+        <div class="mb-3">
+            <label class="form-label" for="id_first_name">First Name</label>
+            <input type="text" name="first_name" id="id_first_name" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" value="{{ form.first_name.value|default_if_none:'' }}" required>
+            {% if form.first_name.errors %}
+                <div class="invalid-feedback">{{ form.first_name.errors|join:", " }}</div>
+            {% endif %}
+        </div>
 
-            <!-- Last name field -->
-            <div class="mb-3">
-                <label class="form-label" for="id_last_name">Last Name</label>
-                <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default_if_none:'' }}" required>
-                {% if form.last_name.errors %}
-                    <div class="text-danger">{{ form.last_name.errors|join:", " }}</div>
-                {% endif %}
-            </div>
+        <!-- Last Name field -->
+        <div class="mb-3">
+            <label class="form-label" for="id_last_name">Last Name</label>
+            <input type="text" name="last_name" id="id_last_name" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" value="{{ form.last_name.value|default_if_none:'' }}" required>
+            {% if form.last_name.errors %}
+                <div class="invalid-feedback">{{ form.last_name.errors|join:", " }}</div>
+            {% endif %}
+        </div>
 
-            <!-- Company name field -->
-            <div class="mb-3">
-                <label class="form-label" for="id_company_name">Company Name</label>
-                <input type="text" name="company_name" class="form-control" value="{{ form.company_name.value|default_if_none:'' }}" required>
-                {% if form.company_name.errors %}
-                    <div class="text-danger">{{ form.company_name.errors|join:", " }}</div>
-                {% endif %}
-            </div>
+        <!-- Optional Company Name Field -->
+        <div class="mb-3">
+            <label class="form-label" for="id_company_name">Company Name (Optional)</label>
+            <input type="text" name="company_name" id="id_company_name" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" value="{{ form.company_name.value|default_if_none:'' }}">
+            {% if form.company_name.errors %}
+                <div class="invalid-feedback">{{ form.company_name.errors|join:", " }}</div>
+            {% endif %}
+        </div>
 
-            <!-- Additional Emails Tag Input (Optional) -->
-            <div class="mb-3">
-                <label class="form-label">Additional emails (optional)</label>
-                <input type="text" id="email-input" class="form-control" placeholder="Enter email and press Enter">
-                <small class="form-text">Enter additional emails one by one.</small>
-                <div class="email-tags-container" id="email-tags-container"></div>
-                <input type="hidden" name="additional_emails" id="additional-emails-input">
-            </div>
+        <!-- Additional Emails Field -->
+        <div class="mb-3">
+            <label class="form-label">Additional Emails (Optional)</label>
+            <input type="text" id="email-input" class="form-control" placeholder="Enter email and press Enter">
+            <small class="form-text">Enter additional emails one by one.</small>
+            <div id="email-tags-container" class="email-tags-container"></div>
+            <input type="hidden" name="additional_emails" id="additional-emails-input" value="{{ form.additional_emails.value|default_if_none:'' }}">
+        </div>
 
-            <!-- Address Fields -->
+        <!-- Toggle for Address Fields -->
+        <div class="mb-3 form-check">
+            <input type="checkbox" id="include-address" class="form-check-input" {% if form.street.value %}checked{% endif %}>
+            <label class="form-check-label" for="include-address">Include Address Details</label>
+        </div>
+
+        <!-- Address Fields -->
+        <div id="address-fields" style="display: {% if form.street.value %}block{% else %}none{% endif %};">
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label" for="id_street">Street</label>
-                    <input type="text" name="street" class="form-control" value="{{ form.street.value|default_if_none:'' }}" required>
+                    <input type="text" name="street" id="id_street" class="form-control {% if form.street.errors %}is-invalid{% endif %}" value="{{ form.street.value|default_if_none:'' }}">
                     {% if form.street.errors %}
-                        <div class="text-danger">{{ form.street.errors|join:", " }}</div>
+                        <div class="invalid-feedback">{{ form.street.errors|join:", " }}</div>
                     {% endif %}
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label" for="id_city">City</label>
-                    <input type="text" name="city" class="form-control" value="{{ form.city.value|default_if_none:'' }}" required>
+                    <input type="text" name="city" id="id_city" class="form-control {% if form.city.errors %}is-invalid{% endif %}" value="{{ form.city.value|default_if_none:'' }}">
                     {% if form.city.errors %}
-                        <div class="text-danger">{{ form.city.errors|join:", " }}</div>
+                        <div class="invalid-feedback">{{ form.city.errors|join:", " }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -222,67 +229,84 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label" for="id_province">Province</label>
-                    <input type="text" name="province" class="form-control" value="{{ form.province.value|default_if_none:'' }}" required>
+                    <input type="text" name="province" id="id_province" class="form-control {% if form.province.errors %}is-invalid{% endif %}" value="{{ form.province.value|default_if_none:'' }}">
                     {% if form.province.errors %}
-                        <div class="text-danger">{{ form.province.errors|join:", " }}</div>
+                        <div class="invalid-feedback">{{ form.province.errors|join:", " }}</div>
                     {% endif %}
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label" for="id_postal_code">Postal Code</label>
-                    <input type="text" name="postal_code" class="form-control" value="{{ form.postal_code.value|default_if_none:'' }}" required>
+                    <input type="text" name="postal_code" id="id_postal_code" class="form-control {% if form.postal_code.errors %}is-invalid{% endif %}" value="{{ form.postal_code.value|default_if_none:'' }}">
                     {% if form.postal_code.errors %}
-                        <div class="text-danger">{{ form.postal_code.errors|join:", " }}</div>
+                        <div class="invalid-feedback">{{ form.postal_code.errors|join:", " }}</div>
                     {% endif %}
                 </div>
             </div>
 
             <div class="mb-3">
                 <label class="form-label" for="id_country">Country</label>
-                <input type="text" name="country" class="form-control" value="{{ form.country.value|default_if_none:'' }}" required>
+                <input type="text" name="country" id="id_country" class="form-control {% if form.country.errors %}is-invalid{% endif %}" value="{{ form.country.value|default_if_none:'' }}">
                 {% if form.country.errors %}
-                    <div class="text-danger">{{ form.country.errors|join:", " }}</div>
+                    <div class="invalid-feedback">{{ form.country.errors|join:", " }}</div>
                 {% endif %}
             </div>
-
-            <!-- Password Fields -->
-            <div class="mb-3">
-                <label class="form-label" for="id_password1">Password</label>
-                <input type="password" name="password1" class="form-control" required>
-                {% if form.password1.errors %}
-                    <div class="text-danger">{{ form.password1.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label" for="id_password2">Confirm Password</label>
-                <input type="password" name="password2" class="form-control" required>
-                {% if form.password2.errors %}
-                    <div class="text-danger">{{ form.password2.errors|join:", " }}</div>
-                {% endif %}
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-submit w-100">Signup</button>
-        </form>
-        <div class="login-link">
-            <p>Already have an account? <a href="{% url 'customers:login' %}">Login here</a></p>
         </div>
-    </div>
 
-    <script>
+        <!-- Password Fields -->
+        <div class="mb-3">
+            <label class="form-label" for="id_password1">Password</label>
+            <input type="password" name="password1" id="id_password1" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" required>
+            {% if form.password1.errors %}
+                <div class="invalid-feedback">{{ form.password1.errors|join:", " }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="id_password2">Confirm Password</label>
+            <input type="password" name="password2" id="id_password2" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" required>
+            {% if form.password2.errors %}
+                <div class="invalid-feedback">{{ form.password2.errors|join:", " }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-submit w-100">Signup</button>
+    </form>
+
+    <div class="login-link">
+        <p>Already have an account? <a href="{% url 'customers:login' %}">Login here</a></p>
+    </div>
+</div>
+
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
         const emailInput = document.getElementById('email-input');
         const emailTagsContainer = document.getElementById('email-tags-container');
         const additionalEmailsInput = document.getElementById('additional-emails-input');
+        const includeAddressCheckbox = document.getElementById('include-address');
+        const addressFieldsContainer = document.getElementById('address-fields');
         let emailList = [];
 
+        // Regex pattern for validating email addresses
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+        /**
+         * Add email as a tag
+         * @param {string} email - The email to add as a tag
+         */
         function addEmailTag(email) {
             const tag = document.createElement('div');
-            tag.classList.add('email-tag');
+            tag.classList.add('email-tag', 'd-inline-block', 'me-2', 'p-2', 'border', 'rounded');
             tag.textContent = email;
 
             const removeBtn = document.createElement('button');
-            removeBtn.textContent = '×';
-            removeBtn.onclick = () => removeEmail(email, tag);
+            removeBtn.type = 'button';
+            removeBtn.classList.add('btn-close', 'ms-2');
+            removeBtn.setAttribute('aria-label', 'Remove');
+            removeBtn.addEventListener('click', () => removeEmail(email, tag));
             tag.appendChild(removeBtn);
 
             emailTagsContainer.appendChild(tag);
@@ -290,14 +314,18 @@
             additionalEmailsInput.value = emailList.join(',');
         }
 
+        /**
+         * Remove email tag
+         * @param {string} email - The email to remove
+         * @param {HTMLElement} tag - The tag element to remove
+         */
         function removeEmail(email, tag) {
             emailTagsContainer.removeChild(tag);
             emailList = emailList.filter(e => e !== email);
             additionalEmailsInput.value = emailList.join(',');
         }
 
-        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
+        // Handle adding emails on Enter keypress
         emailInput.addEventListener('keypress', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -314,6 +342,14 @@
                 }
             }
         });
-    </script>
+
+        // Toggle visibility of address fields
+        includeAddressCheckbox.addEventListener('change', function () {
+            addressFieldsContainer.style.display = this.checked ? 'block' : 'none';
+        });
+    });
+</script>
+
+
 </body>
 </html>

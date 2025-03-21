@@ -7,17 +7,36 @@ class CustomerSignupForm(UserCreationForm):
     phone_number = forms.CharField(required=True)
     first_name = forms.CharField(required=True)
     last_name = forms.CharField(required=True)
-    company_name = forms.CharField(required=True)
-    additional_emails = forms.CharField(widget=forms.Textarea, required=False, help_text="Enter additional emails separated by commas.")
-    street = forms.CharField(required=True)
-    city = forms.CharField(required=True)
-    province = forms.CharField(required=True)
-    postal_code = forms.CharField(required=True)
-    country = forms.CharField(required=True)
+    company_name = forms.CharField(required=False)  # Make this field optional
+    additional_emails = forms.CharField(
+        widget=forms.Textarea,
+        required=False,
+        help_text="Enter additional emails separated by commas."
+    )
+    street = forms.CharField(required=False)
+    city = forms.CharField(required=False)
+    province = forms.CharField(required=False)
+    postal_code = forms.CharField(required=False)
+    country = forms.CharField(required=False)
 
     class Meta(UserCreationForm.Meta):
         model = Customer
-        fields = ('email', 'phone_number', 'first_name', 'last_name', 'company_name', 'additional_emails', 'street', 'city', 'province', 'postal_code', 'country', 'password1', 'password2')
+        fields = (
+            'email',
+            'phone_number',
+            'first_name',
+            'last_name',
+            'company_name',
+            'additional_emails',
+            'street',
+            'city',
+            'province',
+            'postal_code',
+            'country',
+            'password1',
+            'password2'
+        )
+
 
 class CustomerLoginForm(forms.Form):
     email_or_phone = forms.CharField(label="Email or Phone number")

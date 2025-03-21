@@ -2,175 +2,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Confirm Shipping Method - Mekco Supply Inc.</title>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
-
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f7fc;
-            color: #333;
-            margin: 0;
-            padding: 0;
-        }
-
-        .header {
-            background-color: #007bff;
-            color: #ffffff;
-            padding: 20px 0;
-            text-align: center;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 50px auto;
-            background: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-            color: #1e3a8a;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .shipping-options ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .shipping-options li {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .shipping-options label {
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            background-color: #e9ecef;
-            cursor: not-allowed;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            color: #ffffff;
-            background-color: #007bff;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .btn-success {
-            background-color: #28a745;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
-        }
-
-        .btn-success:hover {
-            background-color: #218838;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shipping Method Selection - Mekco Supply Inc.</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{% static 'static/css/styles.css' %}">
+  <!-- Font Awesome CDN for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
-    <!-- Header Section -->
-    <div class="header">
-        <h1>Confirm Shipping Method</h1>
-    </div>
+  <div id="app" class="min-h-screen transition-colors duration-300 bg-gray-100 text-gray-800">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <img src="{% static 'static/img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Logo">
+      </div>
+      <div class="search-bar">
+        <input type="text" placeholder="Search for items...">
+        <i class="fas fa-search"></i>
+      </div>
+      <div class="menu-btn" onclick="openMenu()">
+        <i class="fas fa-bars"></i>
+      </div>
+      <!-- Dark Mode Toggle Button -->
+      <button id="darkModeToggle">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </header>
 
-    <!-- Container -->
-    <div class="container">
-        <form method="post" action="{% url 'ecommerce:before_payment' %}">
-            {% csrf_token %}
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+      <!-- The form submits the shipping selection to your before_payment view -->
+      <form method="post" action="{% url 'ecommerce:before_payment' %}">
+        {% csrf_token %}
+        <div id="card" class="max-w-[600px] mx-auto bg-white rounded-lg shadow-lg p-6">
+          <div id="shippingOptions" class="space-y-4">
+            <!-- Shipping options will be injected here by JavaScript -->
+          </div>
 
-            <!-- Shipping Options Section -->
-            <div class="shipping-options">
-                {% if show_shipping_rates and shipping_rates %}
-                    <h2>Select a Shipping Option</h2>
-                    <ul>
-                        {% for rate in shipping_rates %}
-                            <li>
-                                <input
-                                    type="radio"
-                                    id="rate_{{ forloop.counter }}"
-                                    name="selected_rate"
-                                    value="{{ rate.shipmentCost }}"
-                                    onclick="setShippingCost({{ rate.shipmentCost }}, '{{ rate.serviceName }}')"
-                                    required
-                                >
-                                <label for="rate_{{ forloop.counter }}">
-                                    {{ rate.serviceName }} - ${{ rate.shipmentCost }} (Other Cost: ${{ rate.otherCost }})
-                                </label>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No shipping rates available. Please contact customer service.</p>
-                {% endif %}
-            </div>
+          <div class="mt-6">
+            <label class="block text-sm font-medium mb-2">Shipping Cost</label>
+            <input
+              type="text"
+              id="shippingCost"
+              name="manual_shipping_cost"
+              readonly
+              value="$0.00"
+              class="w-full p-3 rounded-md font-mono bg-gray-100 border-cyan-500 focus:outline-none"
+            />
+          </div>
 
-            <!-- Manual Shipping Cost Section -->
-            <div class="manual-cost form-group">
-                <label for="manual_shipping_cost">Shipping Cost:</label>
-                <input
-                    type="number"
-                    id="manual_shipping_cost"
-                    name="manual_shipping_cost"
-                    step="0.01"
-                    min="0"
-                    readonly
-                    required>
-            </div>
+          <!-- Hidden Field for Shipping Service Name -->
+          <input type="hidden" name="shipping_service_name" id="shipping_service_name" value="">
 
-            <!-- Hidden Fields -->
-            <input type="hidden" id="shipping_service_name" name="shipping_service_name">
+          <div class="mt-8 space-y-4">
+            <button
+              id="confirmBtn"
+              type="submit"
+              class="w-full py-3 px-4 rounded-md font-semibold bg-gray-400 cursor-not-allowed text-gray-200 transition-colors duration-300 transform active:scale-95"
+              disabled
+            >
+              Confirm and Continue
+            </button>
+            <a
+              id="backBtn"
+              href="{% url 'ecommerce:confirm_shipping_method' %}"
+              class="w-full block py-3 px-4 rounded-md font-semibold bg-cyan-500 hover:bg-cyan-600 text-white text-center transition-colors duration-300 transform active:scale-95 flex items-center justify-center gap-2"
+            >
+              <i class="fas fa-arrow-left"></i> Back
+            </a>
+          </div>
+        </div>
+      </form>
+    </main>
 
-            <!-- Submit Button -->
-            <button type="submit" class="btn btn-success">Confirm and Continue</button>
-        </form>
-    </div>
+    <!-- Footer -->
+    <footer class="footer text-center py-4">
+      <p>&copy; <span id="year"></span> Mekco Supply Inc. All rights reserved.</p>
+    </footer>
+  </div>
 
-    <script>
-        function setShippingCost(rateCost, serviceName) {
-            document.getElementById('manual_shipping_cost').value = rateCost.toFixed(2);
-            document.getElementById('shipping_service_name').value = serviceName;
+  <!-- Django Shipping Rates JSON Data -->
+  {{ shipping_rates|json_script:"shippingRatesData" }}
+
+  <script>
+    // State variables
+    let darkMode = false;
+    let selectedMethod = "";
+
+    // Parse Django shipping rates JSON data and transform into our shipping options format.
+    // We assume each rate has shipmentCost, serviceName, and otherCost.
+    const djangoShippingRates = JSON.parse(document.getElementById('shippingRatesData').textContent);
+    const shippingOptions = djangoShippingRates.map((rate, index) => ({
+      id: `rate_${index + 1}`,
+      carrier: rate.serviceName,
+      type: "", // Optional: add a type if available
+      price: parseFloat(rate.shipmentCost),
+      icon: '<i class="fas fa-shipping-fast text-2xl"></i>', // Default icon for all options
+      additionalInfo: rate.otherCost ? `Other Cost: $${rate.otherCost}` : ""
+    }));
+
+    // Cached DOM elements
+    const app = document.getElementById("app");
+    const shippingOptionsContainer = document.getElementById("shippingOptions");
+    const shippingCostInput = document.getElementById("shippingCost");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const card = document.getElementById("card");
+
+    // Render shipping options dynamically
+    function renderShippingOptions() {
+      shippingOptionsContainer.innerHTML = "";
+      shippingOptions.forEach(option => {
+        const isSelected = selectedMethod === option.id;
+        let optionClasses = "p-4 rounded-lg cursor-pointer transition-all duration-300 ";
+        if (isSelected) {
+          optionClasses += darkMode
+            ? "bg-cyan-900 border-2 border-cyan-500"
+            : "bg-cyan-50 border-2 border-cyan-500";
+        } else {
+          optionClasses += darkMode
+            ? "bg-gray-700 hover:bg-gray-600"
+            : "bg-gray-50 hover:bg-cyan-50";
         }
-    </script>
+        const optionDiv = document.createElement("div");
+        optionDiv.className = optionClasses;
+        optionDiv.setAttribute("role", "radio");
+        optionDiv.setAttribute("aria-checked", isSelected);
+        optionDiv.setAttribute("tabindex", "0");
+        optionDiv.dataset.id = option.id;
+        optionDiv.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="${darkMode ? "text-cyan-400" : "text-cyan-600"}">
+                ${option.icon}
+              </div>
+              <div>
+                <h3 class="font-semibold">${option.carrier}</h3>
+                ${option.type ? `<p class="text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}">${option.type}</p>` : ""}
+                ${option.additionalInfo ? `<p class="text-xs mt-1">${option.additionalInfo}</p>` : ""}
+              </div>
+            </div>
+            <div class="text-lg font-mono">$${option.price.toFixed(2)}</div>
+          </div>
+        `;
+        // Add click and keyboard accessibility
+        optionDiv.addEventListener("click", () => handleMethodSelect(option.id));
+        optionDiv.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleMethodSelect(option.id);
+          }
+        });
+        shippingOptionsContainer.appendChild(optionDiv);
+      });
+    }
+
+    // Handle selection of a shipping method
+    function handleMethodSelect(id) {
+      selectedMethod = id;
+      updateUI();
+    }
+
+    // (Optional) Toggle dark mode state if needed
+    function toggleDarkMode() {
+      darkMode = !darkMode;
+      updateUI();
+    }
+
+    // Update UI based on current state
+    function updateUI() {
+      // Update overall app background and text color
+      app.className = `min-h-screen transition-colors duration-300 ${darkMode ? "bg-gray-900 text-cyan-300" : "bg-gray-100 text-gray-800"}`;
+
+      // Update card background
+      card.className = `max-w-[600px] mx-auto ${darkMode ? "bg-gray-800" : "bg-white"} rounded-lg shadow-lg p-6`;
+
+      // Render shipping options
+      renderShippingOptions();
+
+      // Update shipping cost display and hidden input for shipping service name
+      const selectedOption = shippingOptions.find(opt => opt.id === selectedMethod);
+      if (selectedOption) {
+        shippingCostInput.value = `$${selectedOption.price.toFixed(2)}`;
+        document.getElementById('shipping_service_name').value = selectedOption.carrier;
+      } else {
+        shippingCostInput.value = "$0.00";
+        document.getElementById('shipping_service_name').value = "";
+      }
+
+      // Update confirm button state
+      confirmBtn.disabled = !selectedMethod;
+      confirmBtn.className = `w-full py-3 px-4 rounded-md font-semibold transition-colors duration-300 transform active:scale-95 ${
+        selectedMethod ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-400 cursor-not-allowed text-gray-200"
+      }`;
+    }
+
+    // Set current year in footer
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Initial render
+    updateUI();
+  </script>
 </body>
 </html>

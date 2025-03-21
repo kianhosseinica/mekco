@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Self-Order Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f8f8f8; }
+        .container { width: 50%; margin: auto; background: white; padding: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.2); }
+        .input-field { width: 80%; padding: 10px; font-size: 18px; margin: 10px 0; }
+        .search-btn { padding: 10px 20px; font-size: 18px; cursor: pointer; background-color: #ffcc00; border: none; }
+        .customer-info { margin-top: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enter Your Phone Number</h1>
+        <input type="text" id="phone-number" class="input-field" placeholder="Enter phone number">
+        <button class="search-btn" onclick="searchCustomer()">Search</button>
+
+        <div class="customer-info" id="customer-info">
+            <h2 id="customer-name"></h2>
+            <a id="continue-btn" style="display: none; padding: 10px 20px; font-size: 18px; background-color: green; color: white; text-decoration: none;">Continue</a>
+        </div>
+    </div>
+
+    <script>
+        function searchCustomer() {
+            let phone = document.getElementById('phone-number').value;
+            fetch(`/self-order/search-customer/?phone=${phone}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.name) {
+                        document.getElementById('customer-name').innerText = "Welcome, " + data.name;
+                        document.getElementById('customer-info').style.display = "block";
+                        document.getElementById('continue-btn').href = `/self-order/menu/${data.customer_id}/`;
+                        document.getElementById('continue-btn').style.display = "inline-block";
+                    } else {
+                        alert("Customer not found!");
+                    }
+                })
+                .catch(error => console.log("Error:", error));
+        }
+    </script>
+</body>
+</html>

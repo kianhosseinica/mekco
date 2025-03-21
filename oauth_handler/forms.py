@@ -52,3 +52,20 @@ class VariantForm(forms.ModelForm):
     class Meta:
         model = Item
         fields = ['quantity', 'discount_percentage']
+
+
+
+
+from django import forms
+
+class SMSForm(forms.Form):
+    phone_number = forms.CharField(
+        label="Phone Number",
+        max_length=15,
+        widget=forms.TextInput(attrs={"placeholder": "+1234567890"})
+    )
+    message = forms.CharField(
+        label="Message",
+        max_length=160,
+        widget=forms.Textarea(attrs={"placeholder": "Enter your message here", "rows": 3})
+    )

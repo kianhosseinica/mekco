@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details</title>
+    <link rel="stylesheet" href="{% static 'static/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'static/css/product.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-icons">
+            <span class="top-icon"><i class="fas fa-map-marker-alt" title="Address"></i></span>
+            <span class="top-icon"><i class="fas fa-phone" title="Phone"></i></span>
+            <span class="top-icon"><i class="fas fa-envelope" title="Email"></i></span>
+            <span class="top-icon"><i class="fas fa-shopping-cart" title="Cart"></i></span>
+            <span class="top-icon"><i class="fas fa-user" title="Login/Logout"></i></span>
+        </div>
+    </div>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="{% static 'static/img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Logo">
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="Search for items...">
+            <i class="fas fa-search"></i>
+        </div>
+        <div class="menu-btn" onclick="openMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
+    </header>
+
+    <!-- Sliding Menu -->
+    <div class="side-menu" id="sideMenu">
+        <div class="close-btn" onclick="closeMenu()">&times;</div>
+        <h3>Shop by Category</h3>
+        <a href="#">Pipes & Tubes</a>
+        <a href="#">Fittings</a>
+        <a href="#">Valves</a>
+        <a href="#">Plumbing Tools</a>
+        <a href="#">Water Heaters</a>
+        <a href="#">Accessories</a>
+
+        <!-- Icons at the Bottom -->
+        <div class="side-menu-icons">
+            <span class="menu-icon"><i class="fas fa-map-marker-alt"></i></span>
+            <span class="menu-icon"><i class="fas fa-phone"></i></span>
+            <span class="menu-icon"><i class="fas fa-envelope"></i></span>
+            <span class="menu-icon"><i class="fas fa-shopping-cart"></i></span>
+            <span class="menu-icon"><i class="fas fa-user"></i></span>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+{% if full_category_path %}
+    <nav class="breadcrumb">
+        <a href="{% url 'ecommerce:item_list' %}">Home</a>
+        {% for category in full_category_path %}
+            {% if not forloop.last %}
+                &gt; <a href="{% url 'ecommerce:items_list' category.id %}">{{ category.name }}</a>
+            {% else %}
+                &gt; <span>{{ category.name }}</span>
+            {% endif %}
+        {% endfor %}
+        &gt; <span aria-current="page">{{ item.description }}</span>
+    </nav>
+{% else %}
+    <nav class="breadcrumb">
+        <a href="{% url 'ecommerce:item_list' %}">Home</a>
+    </nav>
+{% endif %}
+
+
+
+
+
+    <!-- Product Details Section -->
+<div class="content">
+    <div class="product-details-box">
+        <!-- Feedback Messages -->
+        <div id="feedback-notification" class="feedback-notification" style="display: none;"></div>
+
+        <!-- Product Gallery -->
+        <div class="product-gallery">
+            <div class="main-image">
+                {% if images %}
+                    <img src="{{ images.0.image_url }}" alt="Main Product Image">
+                {% else %}
+                    <img src="{% static 'static/img/default.jpg' %}" alt="Main Product Image">
+                {% endif %}
+            </div>
+            <div class="thumbnail-gallery">
+                {% for image in images %}
+                    <img src="{{ image.image_url }}" alt="Thumbnail {{ forloop.counter }}">
+                {% empty %}
+                    <img src="{% static 'static/img/default.jpg' %}" alt="Thumbnail Placeholder">
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Product Info -->
+        <div class="product-info">
+            <h1>{{ item.description }}</h1>
+            <p class="product-description">
+                {{ item.long_description|default:"No description available for this product." }}
+            </p>
+            <div class="product-details">
+                <p><strong>Brand:</strong> {{ item.brand.name|default:"Unknown Brand" }}</p>
+                {% if item.brand and item.brand.logo %}
+                    <div class="brand-logo">
+                        <img src="{{ item.brand.logo.url }}" alt="{{ item.brand.name }}">
+                    </div>
+                {% endif %}
+            </div>
+            <p class="product-price">
+                {% if item.discounted_price != item.price_default %}
+                    <span class="original-price">${{ item.price_default|floatformat:2 }}</span>
+                {% endif %}
+                <span class="discounted-price">${{ item.discounted_price|floatformat:2 }}</span>
+            </p>
+
+            <!-- Unified Input Bar -->
+            <form method="post" action="{% url 'ecommerce:add_to_cart' item.id %}" class="add-to-cart-form">
+                {% csrf_token %}
+                <div class="product-input-bar">
+                    <select name="item_type" required>
+                        <option value="single">Individual Item ({{ available_singles }})</option>
+                        {% if available_bags > 0 %}
+                            <option value="bag">Bag of {{ item.bag_quantity }} ({{ available_bags }})</option>
+                        {% endif %}
+                        {% if available_boxes > 0 %}
+                            <option value="box">Box of {{ item.box_quantity }} ({{ available_boxes }})</option>
+                        {% endif %}
+                    </select>
+                    <input type="number" name="quantity" value="1" min="1" max="{{ available_singles }}" required>
+                    <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Feedback Notification -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const feedbackNotification = document.getElementById('feedback-notification');
+
+        // Handle Add to Cart submission via AJAX
+        document.querySelectorAll('.add-to-cart-form').forEach(form => {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                const formData = new FormData(form);
+                const url = form.action;
+
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFeedback(data.message, 'success');
+                        } else {
+                            showFeedback(data.message, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showFeedback('An error occurred. Please try again.', 'error');
+                    });
+            });
+        });
+
+        // Function to show feedback notification
+        function showFeedback(message, type) {
+            feedbackNotification.textContent = message;
+
+            // Set notification type class
+            feedbackNotification.className = `feedback-notification ${type}`;
+            feedbackNotification.style.display = 'block';
+
+            // Hide the notification after 6 seconds
+            setTimeout(() => {
+                feedbackNotification.style.opacity = 0; // Fade out
+                setTimeout(() => {
+                    feedbackNotification.style.display = 'none';
+                    feedbackNotification.style.opacity = 1; // Reset opacity
+                }, 1000);
+            }, 6000);
+        }
+    });
+</script>
+
+
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; <span id="year"></span> Mekco Supply Inc. All rights reserved.</p>
+    </footer>
+
+    <script src="{% static 'static/js/scripts.js' %}"></script>
+</body>
+</html>

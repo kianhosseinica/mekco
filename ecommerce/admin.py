@@ -44,20 +44,52 @@ from django.utils.html import format_html
 from django.contrib import admin
 
 
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_number', 'customer', 'status', 'created_at', 'updated_at', 'view_order')
+from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+from .models import Order, OrderItem
 
-    def view_order(self, obj):
-        return format_html('<a href="{}">View</a>', reverse('ecommerce:admin_order_detail', args=[obj.id]))
-    view_order.short_description = "Order Details"
+
+class OrderAdmin(admin.ModelAdmin):
+    # Fields to display in the admin list view
+    list_display = ('order_number', 'customer', 'status', 'created_at', 'updated_at', 'view_order_items')
+
+    # Allow filtering and searching
+    list_filter = ('status', 'delivery_option', 'created_at')
+    search_fields = ('order_number', 'customer__username', 'customer__email', 'status')
+
+    def view_order_items(self, obj):
+        """Custom link to view the order details"""
+        return format_html(
+            '<a href="{}">View Items</a>',
+            reverse('admin:ecommerce_order_change', args=[obj.id])  # Admin URL for editing the order
+        )
+    view_order_items.short_description = "Order Items"
 
     def get_urls(self):
+        """Add custom URLs for admin actions"""
         urls = super().get_urls()
         custom_urls = [
+            # Add your custom admin URLs here if needed
         ]
         return custom_urls + urls
 
-admin.site.register(Order, OrderAdmin)
+
+class OrderItemInline(admin.TabularInline):
+    """Inline view for Order Items in the Order admin"""
+    model = OrderItem
+    extra = 0  # Do not show extra empty fields
+    readonly_fields = ('item', 'quantity', 'original_price', 'discounted_price', 'total_price', 'discount')
+
+
+# Registering the OrderAdmin with the inline OrderItem view
+class OrderWithItemsAdmin(OrderAdmin):
+    inlines = [OrderItemInline]  # Attach the inline model
+
+
+# Register the models with the improved admin interface
+admin.site.register(Order, OrderWithItemsAdmin)
+
 
 
 from decimal import Decimal

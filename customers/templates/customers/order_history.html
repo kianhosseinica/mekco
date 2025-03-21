@@ -100,7 +100,7 @@
             {% for order in orders %}
                 <li class="list-group-item">
                     <a href="{% url 'customers:order_detail' order.id %}">
-                        <strong>Order Number:</strong> {{ order.order_number }}<br>
+                        <strong>Order Number:</strong> {{ order.id }}<br>
                         <strong>Date:</strong> {{ order.created_at|date:"M d, Y" }}<br>
                         <strong>Status:</strong> {{ order.get_status_display }}
                     </a>

@@ -48,4 +48,9 @@ urlpatterns = [
     path('confirm-shipping-method/', views.confirm_shipping_method, name='confirm_shipping_method'),
     path('before-payment/', views.before_payment, name='before_payment'),  # Add this line
 
+    # path('test/', views.test, name='test'),
+    path('items/<int:category_id>/', views.items_list_view, name='items_list'),
+    # path('itemss/<int:item_id>/', views.test_deatil, name='test_detail'),
+    path('testcart/', views.test_cart, name='testcart'),
+
 ]

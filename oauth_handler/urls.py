@@ -33,5 +33,8 @@ urlpatterns = [
     path('load-subcategories/<int:category_id>/', load_subcategories, name='load_subcategories'),
     path('send-email/', send_email, name='send_email'),
 
+        path('send-message/', send_message_page, name='send_message_page'),
+    path('search/', search_items, name='search_items'),
+    path('update-quantity/', update_quantity, name='update_quantity'),
 
 ]

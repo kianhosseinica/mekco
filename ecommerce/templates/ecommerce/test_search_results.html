@@ -1,0 +1,207 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Mekco Supply</title>
+    <link rel="stylesheet" href="{% static 'static/css/products.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-icons">
+            <span class="top-icon"><i class="fas fa-map-marker-alt" title="Address"></i></span>
+            <span class="top-icon"><i class="fas fa-phone" title="Phone"></i></span>
+            <span class="top-icon"><i class="fas fa-envelope" title="Email"></i></span>
+            <span class="top-icon"><i class="fas fa-shopping-cart" title="Cart"></i></span>
+            <span class="top-icon"><i class="fas fa-user" title="Login/Logout"></i></span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="{% static 'static/img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Logo">
+        </div>
+        <div class="search-bar">
+            <form action="{% url 'ecommerce:item_search' %}" method="get" class="search-form" id="searchForm">
+                <input type="text" name="q" placeholder="Search for items..." class="search-input" id="searchInput" value="{{ query }}">
+            </form>
+        </div>
+        <!-- Burger Icon -->
+        <div class="menu-btn" onclick="openMenu()">
+            <i class="fas fa-bars"></i>
+        </div>
+    </header>
+
+    <!-- Sliding Menu -->
+    <div class="side-menu" id="sideMenu">
+        <div class="close-btn" onclick="closeMenu()">&times;</div>
+        <h3>Shop by Category</h3>
+        {% for sidebar_category in sidebar_categories %}
+            <a href="{% url 'ecommerce:item_list' %}?category={{ sidebar_category.id }}">{{ sidebar_category.name }}</a>
+        {% endfor %}
+
+        <!-- Icons at the Bottom -->
+        <div class="side-menu-icons">
+            <span class="menu-icon"><i class="fas fa-map-marker-alt"></i></span>
+            <span class="menu-icon"><i class="fas fa-phone"></i></span>
+            <span class="menu-icon"><i class="fas fa-envelope"></i></span>
+            <span class="menu-icon"><i class="fas fa-shopping-cart"></i></span>
+            <span class="menu-icon"><i class="fas fa-user"></i></span>
+        </div>
+    </div>
+
+
+    <!-- Breadcrumb -->
+{#    <h1 class="mt-4">Search Results for "{{ query }}"</h1>#}
+
+    <!-- Content -->
+<div class="content">
+    <div class="grid">
+        <!-- Dynamic Products -->
+        {% for item in page_obj %}
+        <div class="grid-item" id="item-{{ item.id }}">
+            <!-- Wrap the grid-item with a link to item detail -->
+            <a href="{% url 'ecommerce:item_detail' item.id %}" class="grid-item-link">
+                <!-- Item Image -->
+                <img src="{{ item.get_image_url }}" alt="{{ item.description }}">
+
+                <!-- Item Name -->
+                <h3>{{ item.description }}</h3>
+
+                <!-- Price -->
+                <div class="price">
+                    {% if item.discounted_price != item.price_default %}
+                        <!-- Show original price with a strikethrough if there's a discount -->
+                        <span class="original-price">${{ item.price_default|floatformat:2 }}</span>
+                    {% endif %}
+                    <!-- Show discounted price -->
+                    <span class="discounted-price">${{ item.discounted_price|floatformat:2 }}</span>
+                </div>
+            </a>
+
+            <!-- Add to Cart Form -->
+            <form method="post" action="{% url 'ecommerce:add_to_cart' item.id %}" class="add-to-cart-form" data-item-id="{{ item.id }}">
+                {% csrf_token %}
+                <div class="product-input-bar">
+                    <select name="item_type" required>
+                        <option value="single">Individual Item</option>
+                        {% if item.available_bags > 0 %}
+                        <option value="bag">Bag of {{ item.bag_quantity }}</option>
+                        {% endif %}
+                        {% if item.available_boxes > 0 %}
+                        <option value="box">Box of {{ item.box_quantity }} </option>
+                        {% endif %}
+                    </select>
+                    <input type="number" name="quantity" min="1" max="{{ item.available_singles }}" value="1" required>
+                    <button type="submit" class="add-to-cart-btn">
+                        <i class="fas fa-shopping-cart"></i> Add to Cart
+                    </button>
+                </div>
+            </form>
+            <!-- Feedback message -->
+            <div class="cart-feedback" id="feedback-{{ item.id }}" style="display: none;"></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+                <a href="?q={{ query }}&page=1">&laquo; first</a>
+                <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?q={{ query }}&page={{ page_obj.next_page_number }}">next</a>
+                <a href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+                <a href="?q={{ query }}&page=1">&laquo; first</a>
+                <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+
+            {% if page_obj.has_next %}
+                <a href="?q={{ query }}&page={{ page_obj.next_page_number }}">next</a>
+                <a href="?q={{ query }}&page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+</div>
+
+<script>
+    // Handle Add to Cart submission via AJAX
+    document.querySelectorAll('.add-to-cart-form').forEach(form => {
+        form.addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent default form submission
+            const formData = new FormData(form);
+            const itemId = form.getAttribute('data-item-id'); // Get the item ID from the data attribute
+            const feedbackDiv = document.getElementById(`feedback-${itemId}`);
+
+            // Construct the URL dynamically
+            const url = `/ecommerce/cart/add/${itemId}/`; // Adjust this base path if necessary
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    feedbackDiv.textContent = data.message;
+                    feedbackDiv.style.color = 'green';
+                } else {
+                    feedbackDiv.textContent = data.message;
+                    feedbackDiv.style.color = 'red';
+                }
+                feedbackDiv.style.display = 'block';
+            })
+            .catch(error => {
+                feedbackDiv.textContent = 'An error occurred. Please try again.';
+                feedbackDiv.style.color = 'red';
+                feedbackDiv.style.display = 'block';
+            });
+        });
+    });
+</script>
+
+
+
+
+
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; <span id="year"></span> Mekco Supply Inc. All rights reserved.</p>
+    </footer>
+
+    <script src="{% static 'static/js/scripts.js' %}"></script>
+</body>
+</html>

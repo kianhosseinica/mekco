@@ -1,162 +1,180 @@
-{% load custom_filters %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>Cart Summary - Mekco Supply Inc.</title>
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <style>
-        /* Style adjustments */
-        @page { margin: 0px; }
-        body {
-            font: normal 12pt 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f2f2f2;
-            color: #333;
-            line-height: 1.5;
-        }
-        .receiptHeader { text-align: center; color: #000; margin-top: 20px; padding: 10px; background-color: #ffffff; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
-        .receiptHeader img { margin: 8px 0 4px; }
-        .receiptShopContact { margin: 0; font-size: 14px; }
-        h1 { margin: 20px 0; font-size: 24pt; text-align: left; color: #007bff; padding-left: 20px; }
-        h2 { text-transform: uppercase; font-size: 16pt; margin: .5em 0 0; color: #000; padding-left: 20px; }
-        table { margin: 20px; width: calc(100% - 40px); border-collapse: collapse; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
-        table th, table td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th.description { width: 40%; color: #007bff; }
-        th.quantity, th.amount, th.original-price, th.discount-price, th.remove { text-align: right; color: #007bff; }
-        td.amount, td.original-price, td.discount-price { text-align: right; color: #000; }
-        .total-label { font-weight: bold; }
-        .btn-primary, .btn-success { padding: 10px 20px; margin: 10px; text-align: center; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s ease; }
-        .btn-primary { background-color: #007bff; color: white; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .btn-success { background-color: #28a745; color: white; }
-        .btn-success:hover { background-color: #218838; }
-        .note, .thankyou { text-align: center; font-size: 12px; margin-top: 20px; }
-        .remove-item { color: #dc3545; cursor: pointer; background: none; border: none; padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .footer-notes { background-color: #ffeeba; color: #856404; padding: 15px; position: relative; bottom: 0; left: 0; width: 100%; text-align: center; box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); }
-        .thankyou { color: #28a745; font-size: 13px; }
-        .quantity { flex-direction: column; align-items: center; }
-        input[type="number"] { width: 60px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; transition: border 0.3s; }
-        input[type="number"]:focus { border: 1px solid #007bff; outline: none; }
-        .notification { display: none; position: fixed; top: 0; left: 0; width: 100%; padding: 15px; text-align: center; font-size: 16px; font-weight: bold; color: #fff; z-index: 1000; }
-        .notification.success { background-color: #28a745; }
-        .notification.error { background-color: #dc3545; }
-    </style>
-    <script>
-    function showNotification(message, type = 'info') {
-        const notification = document.getElementById('notification');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
-        notification.style.display = 'block';
-        setTimeout(() => { notification.style.display = 'none'; }, 5000);
-    }
-
-    function confirmRemoval(cartItemId) {
-        if (confirm("Are you sure you want to remove this item?")) {
-            document.querySelector(`input[name='quantity_${cartItemId}']`).value = 0;
-            document.getElementById('cart-form').submit();
-        }
-    }
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopping Cart</title>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <!-- Font Awesome Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
+  <!-- External CSS (already contains header styles) -->
+      <link rel="stylesheet" href="{% static 'static/css/styles.css' %}">
 </head>
-<body>
-    <div id="notification" class="notification"></div>
-    <div class="receiptHeader">
-        <img src="{% static 'img/Mekco-Supply-logo-300px.png' %}" width="225px" alt="Mekco Supply">
-        <p class="receiptShopContact">
-            PLUMBING . HYDRONICS . HVAC<br>
-            110 West Beaver Creek Rd. Unit 16<br>
-            Richmond Hill, ON L4B 1J9<br>
-            905.597.4597 - <a href="https://www.mekcosupply.com/" style="color: #007bff; text-decoration: none;">https://www.mekcosupply.com/</a><br>
-        </p>
+<body class="bg-light">
+  <!-- Header (replacing the top navbar) -->
+  <header class="header">
+    <div class="logo">
+      <img src="{% static 'static/img/Mekco-Supply-logo-300px.png' %}" alt="Mekco Logo">
     </div>
-    {% if messages %}
-        <script>
-            {% for message in messages %}
-                showNotification("{{ message }}", "{{ message.tags }}");
-            {% endfor %}
-        </script>
-    {% endif %}
+    <div class="search-bar">
+      <input type="text" placeholder="Search for items...">
+      <i class="fas fa-search"></i>
+    </div>
+    <div class="menu-btn" onclick="openMenu()">
+      <i class="fas fa-bars"></i>
+    </div>
+  </header>
 
-    <h1>Cart Summary</h1>
-    <h2>Cart ID: {{ cart.id }}</h2>
-    <form method="post" action="{% url 'ecommerce:update_cart_items' %}" id="cart-form">
-        {% csrf_token %}
-        <h2>ITEMS</h2>
-        <table class="salelines">
-            <thead>
-                <tr>
-                    <th class="description">Item</th>
-                    <th class="quantity">Quantity</th>
-                    <th class="original-price">Original Price</th>
-                    <th class="discount-price">Discount Price</th>
-                    <th class="amount">Total Price</th>
-                    <th class="remove"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for cart_item in cart_items %}
-                <tr class="cart-item-row">
-    <td class="description">
-        {{ cart_item.item.description }} - {{ cart_item.item_type }}
-    </td>
-    <td class="quantity">
-        <input type="number"
-               name="quantity_{{ cart_item.id }}"
-               value="{{ cart_item.quantity }}"
-               min="0"
-               max="{{ cart_item.item.quantity_on_hand }}"
-               class="form-control"
-               step="1" required>
-        {% with 'cart_item_'|add:cart_item.id as item_key %}
-            {% if form_errors and form_errors|get_item:item_key %}
-                <div class="error-message">
-                    {{ form_errors|get_item:item_key }}
-                </div>
-            {% endif %}
-        {% endwith %}
-    </td>
-    <td class="original-price">
-        ${{ cart_item.item.price_default|floatformat:2 }}
-    </td>
-    <td class="discount-price">
-        {% if cart_item.price < cart_item.item.price_default %}
-            ${{ cart_item.price|floatformat:2 }}
-        {% else %}
-            -
-        {% endif %}
-    </td>
-    <td class="amount">
-        ${{ cart_item.total_price|floatformat:2 }}
-    </td>
-    <td class="remove">
-        <button type="button" class="remove-item" onclick="confirmRemoval({{ cart_item.id }})">
-            Remove
-            <img src="{% static 'img/trash.png' %}" alt="Remove" width="20" style="margin-top: 4px;">
-        </button>
-    </td>
-</tr>
-
-                {% endfor %}
-            </tbody>
-        </table>
-        <table class="totals">
-            <tr><td class="total-label">Subtotal</td><td class="amount">${{ total_price|floatformat:2 }}</td></tr>
-            <tr><td class="total-label">Total Discounts</td><td class="amount">{% if total_discount > 0 %}-${{ total_discount|floatformat:2 }}{% else %}$0.00{% endif %}</td></tr>
-            <tr><td class="total-label">HST (13%)</td><td class="amount">${{ hst|floatformat:2 }}</td></tr>
-            <tr class="total"><td class="total-label">Total with HST</td><td class="amount">${{ total_price_with_hst|floatformat:2 }}</td></tr>
-        </table>
-        <div class="mt-3 text-end">
-            <button type="submit" class="btn-primary">Update Cart</button>
-            <a href="{% url 'ecommerce:checkout' %}" class="btn-success">Proceed to Checkout</a>
+  <!-- Main Content -->
+  <main class="container my-4">
+    <div class="mt-4 d-flex flex-column flex-md-row" style="margin-bottom: 50px;">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h1 class="h3 font-weight-bold gradient-text">Shopping Cart</h1>
+          <span class="text-muted">Cart ID: {{ cart.id }}</span>
         </div>
-    </form>
-    <div class="footer-notes">
-        <p>* 8% Re-stocking fee will be applicable.<br> * Mekco Supply Invoice must be presented at the time.<br><br> This order is subject to Mekco Supply Inc's Terms and Conditions of Sale.</p>
-        <p class="thankyou">Thank You for Shopping with Us!</p>
+        <!-- Cart Items Rendered via Django Loop -->
+        <form method="post" action="{% url 'ecommerce:update_cart_items' %}" id="cart-form">
+          {% csrf_token %}
+          <div id="cartItemsContainer">
+            {% for cart_item in cart_items %}
+            <div class="d-flex flex-column flex-md-row align-items-center border rounded p-3 mb-3 cart-item">
+              <!-- Image using get_image_url method -->
+              <img src="{{ cart_item.item.get_image_url }}"
+                   alt="{{ cart_item.item.description }}"
+                   class="img-fluid rounded mb-2 mb-md-0"
+                   style="width: 100px; height: 100px;">
+              <!-- Details: Name and Stock -->
+              <div class="flex-fill mx-md-3 text-center text-md-left">
+                <h5>{{ cart_item.item.description }}</h5>
+                <span class="{% if cart_item.item.quantity_on_hand > cart_item.quantity %}text-success{% else %}text-warning{% endif %}">
+                  {% if cart_item.item.quantity_on_hand > cart_item.quantity %}
+                    In Stock
+                  {% else %}
+                    Low Stock
+                  {% endif %}
+                </span>
+              </div>
+              <!-- Quantity Controls -->
+              <div class="d-flex align-items-center my-2">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="decrementQuantity({{ cart_item.id }})">-</button>
+                <input type="number"
+                       name="quantity_{{ cart_item.id }}"
+                       value="{{ cart_item.quantity }}"
+                       min="0"
+                       max="{{ cart_item.item.quantity_on_hand }}"
+                       class="form-control mx-2"
+                       style="width: 60px; text-align: center;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="incrementQuantity({{ cart_item.id }})">+</button>
+              </div>
+              <!-- Price Details -->
+              <div class="text-right">
+                <p class="mb-1 text-muted"><del>${{ cart_item.item.price_default|floatformat:2 }}</del></p>
+                <p class="mb-1 text-success font-weight-bold">${{ cart_item.price|floatformat:2 }}</p>
+                <p class="font-weight-bold">${{ cart_item.total_price|floatformat:2 }}</p>
+              </div>
+              <!-- Remove Button -->
+              <button type="button" class="btn btn-outline-danger btn-sm ml-md-3" onclick="confirmRemoval({{ cart_item.id }})">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+
+          <!-- Price Summary -->
+          <div class="card mt-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal</span>
+                <span id="subtotal">${{ total_price|floatformat:2 }}</span>
+              </div>
+              <div class="d-flex justify-content-between text-success mb-2">
+                <span>Discount</span>
+                <span id="discount">
+                  {% if total_discount > 0 %}
+                    -${{ total_discount|floatformat:2 }}
+                  {% else %}
+                    $0.00
+                  {% endif %}
+                </span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Tax</span>
+                <span id="tax">${{ hst|floatformat:2 }}</span>
+              </div>
+              <hr />
+              <div class="d-flex justify-content-between font-weight-bold h5">
+                <span>Total</span>
+                <span id="total">${{ total_price_with_hst|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mt-4 d-flex flex-column flex-md-row">
+            <button type="submit" class="btn btn-primary flex-fill mr-md-2 mb-2 mb-md-0">
+              Update Cart
+            </button>
+            <a href="{% url 'ecommerce:checkout' %}" class="btn btn-success flex-fill">
+              Proceed to Checkout
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; <span id="year"></span> Mekco Supply Inc. All rights reserved.</p>
+  </footer>
+
+  <!-- JS Dependencies: jQuery, Popper.js, and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+  <!-- Custom JS -->
+  <script>
+    // Placeholder for menu button functionality
+    function openMenu() {
+      console.log("Menu opened");
+      // Implement menu functionality as needed
+    }
+
+    // Increment quantity by increasing the value of the corresponding input field
+    function incrementQuantity(cartItemId) {
+      const input = document.querySelector("input[name='quantity_" + cartItemId + "']");
+      input.value = parseInt(input.value) + 1;
+    }
+
+    // Decrement quantity ensuring it doesn't drop below zero
+    function decrementQuantity(cartItemId) {
+      const input = document.querySelector("input[name='quantity_" + cartItemId + "']");
+      if (parseInt(input.value) > 0) {
+        input.value = parseInt(input.value) - 1;
+      }
+    }
+
+    // Confirm removal: sets quantity to zero and submits the form
+    function confirmRemoval(cartItemId) {
+      if (confirm("Are you sure you want to remove this item?")) {
+        const input = document.querySelector("input[name='quantity_" + cartItemId + "']");
+        input.value = 0;
+        document.getElementById("cart-form").submit();
+      }
+    }
+
+    // Update the year in the footer dynamically
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

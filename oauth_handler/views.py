@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -1131,6 +1132,7 @@ def add_quote_item(request, quote_id):
 
 
 
+
 def edit_quote(request, quote_id):
     quote = Quote.objects.get(id=quote_id)
     return render(request, 'oauth_handler/edit_quote.html', {'quote': quote})
@@ -1451,22 +1453,228 @@ from django.views.decorators.csrf import csrf_exempt
 
 logger = logging.getLogger(__name__)
 
+from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage
+from time import sleep
+from django.core.mail import EmailMessage
+
+from django.core.mail import EmailMessage
+import re
+
+from django.core.mail import EmailMessage
+import re
+import time
+
 @csrf_exempt
 @user_passes_test(is_admin)
 @login_required
 def send_email(request):
     if request.method == 'POST':
-        form = EmailForm(request.POST)
+        try:
+            data = json.loads(request.body)
+            details = data.get('details', [])
+
+            if not details:
+                return JsonResponse({'success': False, 'error': 'No email details provided'}, status=400)
+
+            valid_email_regex = r'^[^@]+@[^@]+\.[^@]+$'  # Regex for validating email addresses
+            batch_size = 10  # Number of emails to process in each batch
+            delay_between_batches = 5  # Delay in seconds between batches
+            email_count = 0  # Counter for processed emails
+            total_emails = len(details)  # Total emails to process
+
+            for i, detail in enumerate(details):
+                recipient_field = detail.get('email', '')
+                html_message = detail.get('message', '')
+                subject = "2025 Credit History Report"
+
+                # Check if recipient_field is None or empty, or invalid
+                if not recipient_field or recipient_field.lower() == "none":
+                    logger.warning(f"Skipping email due to invalid recipient: {recipient_field}")
+                    continue
+
+                # Split and sanitize recipient addresses
+                recipients = [
+                    addr.strip() for addr in recipient_field.split(',')
+                    if re.match(valid_email_regex, addr.strip())
+                ]
+    
+                if not recipients:  # Skip if no valid recipients
+                    logger.warning(f"Skipping email due to invalid recipient field: {recipient_field}")
+                    continue
+
+                # Create and send the email
+                email = EmailMessage(
+                    subject=subject,
+                    body=html_message,
+                    from_email='mekcosupply@gmail.com',
+                    to=recipients,
+                )
+                email.content_subtype = "html"  # Specify the email format as HTML
+
+                # Add high-importance headers
+                email.extra_headers = {
+                    'X-Priority': '1 (Highest)',
+                    'X-MSMail-Priority': 'High',
+                    'Importance': 'High',
+                }
+
+                # Send email
+                email.send()
+                email_count += len(recipients)
+                logger.info(f"Email successfully sent to: {', '.join(recipients)}")
+
+                # Log progress after every 10 emails
+                if (i + 1) % batch_size == 0:
+                    logger.info(f"Processed {i + 1} out of {total_emails} email details. Sleeping for {delay_between_batches} seconds...")
+                    time.sleep(delay_between_batches)
+
+            # Final log for remaining emails
+            logger.info(f"All emails processed. Total emails sent: {email_count}")
+            return JsonResponse({'success': True, 'message': f'Emails sent successfully. Total emails sent: {email_count}'})
+
+        except json.JSONDecodeError:
+            logger.error('Failed to parse JSON from request body')
+            return JsonResponse({'success': False, 'error': 'Invalid JSON format'}, status=400)
+        except Exception as e:
+            logger.error(f"Error sending emails: {e}", exc_info=True)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+
+
+
+
+
+
+
+from django.http import JsonResponse
+from .utils import send_sms
+
+def send_message_view(request):
+    """
+    Handles SMS message sending via Twilio.
+    """
+    if request.method == "POST":
+        to = request.POST.get("to")
+        message = request.POST.get("message")
+        if not to or not message:
+            return JsonResponse({"status": "error", "message": "Missing 'to' or 'message' parameter"}, status=400)
+
+        result = send_sms(to, message)
+        return JsonResponse(result)
+    return JsonResponse({"status": "error", "message": "Invalid request method"}, status=405)
+
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from .forms import SMSForm
+from .utils import send_sms
+
+
+def send_message_page(request):
+    """
+    Renders a page with a form to send SMS via Twilio.
+    """
+    if request.method == "POST":
+        form = SMSForm(request.POST)
         if form.is_valid():
-            recipient = form.cleaned_data['recipient']
-            subject = form.cleaned_data['subject']
-            message = form.cleaned_data['message']
-            try:
-                send_mail(subject, message, 'mekcosupply@gmail.com', [recipient])
-                return JsonResponse({'success': True})
-            except Exception as e:
-                logger.error(f'Error sending email: {e}')
-                return JsonResponse({'success': False, 'error': str(e)})
-        else:
-            return JsonResponse({'success': False, 'error': 'Invalid form data'})
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+            phone_number = form.cleaned_data["phone_number"]
+            message = form.cleaned_data["message"]
+
+            # Send the SMS
+            result = send_sms(phone_number, message)
+
+            # Show success or error message
+            if result["status"] == "success":
+                return render(request, "oauth_handler/success.html", {"sid": result["sid"]})
+            else:
+                return render(request, "oauth_handler/error.html", {"error": result["message"]})
+    else:
+        form = SMSForm()
+
+    return render(request, "oauth_handler/send_message.html", {"form": form})
+
+
+
+
+
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import Item
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.db.models import Q
+from .models import Item
+
+def search_items(request):
+    """
+    View to search for items by scanning or entering a query.
+    Renders an HTML page if accessed without a query parameter.
+    Returns JSON for search results when a query is provided.
+    """
+    query = request.GET.get('q', '').strip()
+
+    # If no query, render the HTML page
+    if not query:
+        return render(request, 'oauth_handler/search_items.html')
+
+    # Search across all relevant fields
+    items = Item.objects.filter(
+        Q(description__icontains=query) |
+        Q(system_sku__icontains=query) |
+        Q(manufacturer_sku__icontains=query) |
+        Q(category__name__icontains=query) |
+        Q(vendor__name__icontains=query) |
+        Q(brand__name__icontains=query)
+    ).values('id','description', 'quantity_on_hand')
+
+    # Check if items were found
+    if not items.exists():
+        return JsonResponse({'message': 'No items found.'})
+
+    # Return the name and quantity of found items
+    return JsonResponse({'items': list(items)})
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
+from .models import Item
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Item
+import json
+
+@csrf_exempt
+def update_quantity(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            item_id = data.get('item_id')
+            action = data.get('action')  # 'add' or 'adjust'
+            quantity = int(data.get('quantity', 0))
+
+            # Fetch the item by ID
+            item = Item.objects.get(pk=item_id)
+
+            # Perform the quantity update
+            if action == 'add':
+                item.quantity_on_hand += quantity
+            elif action == 'adjust':
+                item.quantity_on_hand = quantity
+
+            item.save()
+            return JsonResponse({'message': 'Quantity updated successfully!', 'quantity_on_hand': item.quantity_on_hand})
+        except Item.DoesNotExist:
+            return JsonResponse({'error': 'Item not found.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid request method.'}, status=405)
+

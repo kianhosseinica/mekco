@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="csrf-token" content="{% csrf_token %}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Search</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f9;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 600px;
+            text-align: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.8rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+        }
+
+        button i {
+            margin-right: 5px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            margin: 10px 0;
+            padding: 12px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        li:hover {
+            background-color: #f1f1f1;
+        }
+
+        #selectedItem {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 1rem;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            width: calc(100% - 20px);
+            border: 1px solid #ccc; 
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            input[type="text"],
+            input[type="number"] {
+                font-size: 0.9rem;
+            }
+
+            button {
+                font-size: 0.9rem;
+            }
+
+            li {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .container {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            button,
+            input[type="text"],
+            input[type="number"] {
+                font-size: 0.8rem;
+            }
+
+            li {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Search Items</h1>
+        <input type="text" id="query" placeholder="Enter or scan barcode">
+        <button id="searchButton" onclick="searchItems()">
+            <i class="fas fa-search"></i> Search
+        </button>
+        <ul id="results"></ul>
+
+        <div id="selectedItem" style="display: none;">
+            <h2>Selected Item</h2>
+            <p id="itemDetails"></p>
+            <div>
+                <label for="adjustQuantity">Adjust Quantity:</label>
+                <input type="number" id="adjustQuantity" min="0">
+                <button onclick="adjustQuantity()">Adjust</button>
+            </div>
+            <div>
+                <label for="addQuantity">Add Quantity:</label>
+                <input type="number" id="addQuantity" min="0">
+                <button onclick="addQuantity()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedItem = null;
+
+        // Focus the search box when the page loads
+        window.onload = () => {
+            const queryInput = document.getElementById('query');
+            queryInput.focus();
+        };
+
+        // Auto-select text when search box gains focus
+        document.getElementById('query').addEventListener('focus', function () {
+            this.select();
+        });
+
+        async function searchItems() {
+            const query = document.getElementById('query').value;
+            const resultsList = document.getElementById('results');
+            resultsList.innerHTML = '';
+            document.getElementById('selectedItem').style.display = 'none';
+
+            if (!query) {
+                alert('Please enter a query or scan a barcode.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/oauth/search/?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.items && data.items.length > 0) {
+                        data.items.forEach(item => {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = `${item.description} - Quantity: ${item.quantity_on_hand}`;
+                            listItem.onclick = () => selectItem(item);
+                            resultsList.appendChild(listItem);
+                        });
+                    } else {
+                        resultsList.innerHTML = '<li>No items found.</li>';
+                    }
+                } else {
+                    alert(data.error || 'An error occurred.');
+                }
+            } catch (error) {
+                alert('An error occurred while searching. Please try again.');
+                console.error(error);
+            }
+        }
+
+        function selectItem(item) {
+            selectedItem = item;
+            document.getElementById('itemDetails').textContent = `${item.description} - Current Quantity: ${item.quantity_on_hand}`;
+            document.getElementById('selectedItem').style.display = 'block';
+        }
+
+        async function adjustQuantity() {
+            if (!selectedItem) {
+                alert('Please select an item first.');
+                return;
+            }
+
+            const quantity = document.getElementById('adjustQuantity').value;
+            if (!quantity || isNaN(quantity) || quantity < 0) {
+                alert('Please enter a valid quantity.');
+                return;
+            }
+
+            await updateQuantity('adjust', parseInt(quantity));
+        }
+
+        async function addQuantity() {
+            if (!selectedItem) {
+                alert('Please select an item first.');
+                return;
+            }
+
+            const quantity = document.getElementById('addQuantity').value;
+            if (!quantity || isNaN(quantity) || quantity <= 0) {
+                alert('Please enter a valid quantity.');
+                return;
+            }
+
+            await updateQuantity('add', parseInt(quantity));
+        }
+
+        async function updateQuantity(action, quantity) {
+            try {
+                const csrfToken = getCsrfToken();
+                const response = await fetch('/oauth/update-quantity/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        item_id: selectedItem.id,
+                        action: action,
+                        quantity: quantity,
+                    }),
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert(data.message);
+                    selectedItem.quantity_on_hand = data.quantity_on_hand;
+                    document.getElementById('itemDetails').textContent = `${selectedItem.description} - Current Quantity: ${selectedItem.quantity_on_hand}`;
+                } else {
+                    alert(data.error || 'An error occurred.');
+                }
+            } catch (error) {
+                alert('An error occurred while updating the quantity. Please try again.');
+                console.error(error);
+            }
+        }
+
+        function getCsrfToken() {
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta) return meta.getAttribute('content');
+            else throw new Error("CSRF token not found");
+        }
+    </script>
+</body>
+</html>

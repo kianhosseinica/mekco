@@ -1,73 +1,242 @@
+{% load custom_filters %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f9f9f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header, footer {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 0;
+            text-align: center;
+        }
+        header h1, footer p {
+            margin: 0;
+        }
+        h1, h2 {
+            color: #007bff;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        .table {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            color: #495057;
+        }
+        .table td, .table th {
+            font-size: 0.9rem;
+            word-wrap: break-word;
+        }
+        .container {
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .table {
+                font-size: 0.85rem;
+            }
+            .table thead {
+                display: none;
+            }
+            .table tbody td {
+                display: flex;
+                justify-content: space-between;
+                padding: 8px 5px;
+                border: 1px solid #dee2e6;
+            }
+            .table tbody td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Order Details</h1>
+    <header>
+        <h1>Mekco Supply - Order Details</h1>
+    </header>
 
-    <!-- Customer Information -->
-    <h2>Customer Information</h2>
-    <p><strong>Customer Name:</strong> {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
-    <p><strong>Customer Email:</strong> {{ order.customer.email }}</p>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Order Details</h1>
 
-    <!-- Order General Information -->
-    <h2>Order Information</h2>
-    <p><strong>Order Number:</strong> {{ order.order_number }}</p>
-    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
-    <p><strong>Delivery Option:</strong> {{ order.get_delivery_option_display }}</p>
-    <p><strong>Order Time:</strong> {{ order.order_time }}</p>
-    <p><strong>Created At:</strong> {{ order.created_at }}</p>
-    <p><strong>Updated At:</strong> {{ order.updated_at }}</p>
+        <!-- Customer Information -->
+        <div class="mb-4">
+            <h2>Customer Information</h2>
+            <p><strong>Name:</strong> {{ order.customer.first_name }} {{ order.customer.last_name }}</p>
+            <p><strong>Email:</strong> {{ order.customer.email }}</p>
+        </div>
 
-    <!-- Delivery Address -->
-    <h2>Delivery Address</h2>
-    <p><strong>Street:</strong> {{ order.street }}</p>
-    <p><strong>City:</strong> {{ order.city }}</p>
-    <p><strong>Province:</strong> {{ order.province }}</p>
-    <p><strong>Postal Code:</strong> {{ order.postal_code }}</p>
-    <p><strong>Country:</strong> {{ order.country }}</p>
+        <!-- Order General Information -->
+        <div class="mb-4">
+            <h2>Order Information</h2>
+            <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+            <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+        </div>
 
-    <!-- Order Pricing -->
-    <h2>Pricing Details</h2>
-    <p><strong>Subtotal:</strong> ${{ order.subtotal }}</p>
-    <p><strong>Total Discount:</strong> ${{ order.total_discount }}</p>
-    <p><strong>HST:</strong> ${{ order.hst }}</p>
-    <p><strong>Total with HST:</strong> ${{ order.total_with_hst }}</p>
-    <p><strong>Total with HST and Shipping:</strong> ${{ order.total_with_hst_and_shipping }}</p>
-    <p><strong>Total Price:</strong> ${{ order.total_price }}</p>
+        <!-- Update Status -->
+        <div class="mb-4">
+            <h2>Update Status</h2>
+            <form method="post" action="{% url 'ecommerce:update_order_status' order.id %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_status">Order Status</label>
+                    {{ form.status }}
+                </div>
+                <button type="submit" class="btn btn-success mt-2">Update Status</button>
+            </form>
+        </div>
 
-    <!-- Order Items -->
-    <h2>Order Items</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Original Price</th>
-                <th>Discounted Price</th>
-                <th>Total Price</th>
-                <th>Discount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in order_items %}
-            <tr>
-                <td>{{ item.item.description }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>${{ item.original_price }}</td>
-                <td>${{ item.discounted_price }}</td>
-                <td>${{ item.total_price }}</td>
-                <td>${{ item.discount }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6">No items found for this order.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <!-- Order Items -->
+        <div class="mb-4">
+            <h2>Order Items</h2>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Original Price</th>
+                        <th>Discounted Price</th>
+                        <th>Total Price</th>
+                        <th>Discount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                    <tr>
+                        <td data-label="Item">{{ order.item.description }}</td>
+                        <td data-label="Quantity">{{ item.quantity }}</td>
+                        <td data-label="Original Price">${{ item.original_price }}</td>
+                        <td data-label="Discounted Price">${{ item.discounted_price }}</td>
+                        <td data-label="Total Price">${{ item.total_price }}</td>
+                        <td data-label="Discount">${{ item.discount }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">No items found for this order.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Mekco Supply. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Order Detail - {{ order.order_number }}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .order-info ul { list-style: none; padding: 0; }
+        .order-info li { margin-bottom: 8px; }
+        .order-items { margin-top: 30px; }
+        .order-items table { width: 100%; border-collapse: collapse; }
+        .order-items th, .order-items td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+        .order-items th { background: #f4f4f4; }
+        .order-update { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Order Detail: {{ order.order_number }}</h1>
+
+        <div class="order-info">
+            <h2>Order Information</h2>
+            <ul>
+                <li><strong>Order Date:</strong> {{ order.order_time|date:"M d, Y H:i" }}</li>
+                <li><strong>Status:</strong> {{ order.get_status_display }}</li>
+                <li><strong>Customer:</strong> {{ customer_name }}</li>
+                <li><strong>Subtotal:</strong> ${{ order.subtotal|floatformat:2 }}</li>
+                <li><strong>Total Discount:</strong> ${{ order.total_discount|floatformat:2 }}</li>
+                <li><strong>HST:</strong> ${{ order.hst|floatformat:2 }}</li>
+                <li><strong>Total Price:</strong> ${{ order.total_price|floatformat:2 }}</li>
+                <li><strong>Total with HST:</strong> ${{ order.total_with_hst|floatformat:2 }}</li>
+                <li><strong>Total with HST & Shipping:</strong> ${{ order.total_with_hst_and_shipping|floatformat:2 }}</li>
+            </ul>
+        </div>
+
+        <div class="order-items">
+            <h2>Order Items</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Description</th>
+                        <th>Quantity</th>
+                        <th>Original Price</th>
+                        <th>Discounted Price</th>
+                        <th>Total Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order_item in order_items %}
+                        <tr>
+                            <td>{{ order_item.item.description }}</td>
+                            <td>{{ order_item.quantity }}</td>
+                            <td>${{ order_item.original_price|floatformat:2 }}</td>
+                            <td>${{ order_item.discounted_price|floatformat:2 }}</td>
+                            <td>${{ order_item.total_price|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">No order items found.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="order-update">
+            <h2>Update Order Status</h2>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Update Status</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

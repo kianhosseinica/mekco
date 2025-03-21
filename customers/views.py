@@ -12,36 +12,64 @@ from django.template.loader import render_to_string
 from .models import Customer, Address
 from .forms import CustomerSignupForm, CustomerLoginForm, CustomerProfileForm, AddressForm, AdminCustomerTypeForm, CustomPasswordResetForm, CustomSetPasswordForm
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .forms import CustomerSignupForm
+from .models import Address
+
 def signup_view(request):
     if request.user.is_authenticated:
         messages.info(request, "You are already logged in.")
         return redirect('customers:profile')
+
     if request.method == 'POST':
         form = CustomerSignupForm(request.POST)
         if form.is_valid():
+            # Save user but keep account deactivated
             user = form.save(commit=False)
-            user.is_active = False  # Deactivate account until email confirmation
+            user.is_active = False
+
+            # Process additional emails
             additional_emails = form.cleaned_data['additional_emails']
-            user.additional_emails = [email.strip() for email in additional_emails.split(',') if email.strip()]
+            user.additional_emails = [
+                email.strip() for email in additional_emails.split(',') if email.strip()
+            ]
+
             user.save()
-            Address.objects.create(
-                customer=user,
-                street=form.cleaned_data['street'],
-                city=form.cleaned_data['city'],
-                province=form.cleaned_data['province'],
-                postal_code=form.cleaned_data['postal_code'],
-                country=form.cleaned_data['country']
-            )
+
+            # Handle address creation only if provided
+            include_address = request.POST.get('include_address', False)
+            if include_address and (
+                form.cleaned_data['street'] or
+                form.cleaned_data['city'] or
+                form.cleaned_data['province'] or
+                form.cleaned_data['postal_code'] or
+                form.cleaned_data['country']
+            ):
+                Address.objects.create(
+                    customer=user,
+                    street=form.cleaned_data['street'] or '',
+                    city=form.cleaned_data['city'] or '',
+                    province=form.cleaned_data['province'] or '',
+                    postal_code=form.cleaned_data['postal_code'] or '',
+                    country=form.cleaned_data['country'] or ''
+                )
+
+            # Send verification email
             send_verification_email(request, user)
+
+            # Show success message
             messages.success(request, 'Account created successfully! Please check your email to activate your account.')
             return redirect('customers:login')
         else:
-            # Form is not valid, so pass form errors to the template
+            # Log the errors for debugging
+            print("Form Errors:", form.errors)
             messages.error(request, "There was an error with your submission. Please correct the errors below.")
     else:
         form = CustomerSignupForm()
 
     return render(request, 'customers/signup.html', {'form': form})
+
 
 
 from django.http import JsonResponse
@@ -342,29 +370,29 @@ from django.contrib.auth.decorators import login_required
 from ecommerce.models import Order
 from .forms import CustomerProfileForm, AddressForm
 
-@login_required
-def profile_view(request):
-    if request.method == 'POST':
-        profile_form = CustomerProfileForm(request.POST, instance=request.user)
-        address_form = AddressForm(request.POST, instance=request.user.addresses.first())
-        if profile_form.is_valid() and address_form.is_valid():
-            profile_form.save()
-            additional_emails = profile_form.cleaned_data['additional_emails']
-            request.user.additional_emails = [email.strip() for email in additional_emails.split(',') if email.strip()]
-            request.user.save()
-            address_form.save()
-            messages.success(request, 'Profile updated successfully!')
-    else:
-        profile_form = CustomerProfileForm(instance=request.user)
-        address_form = AddressForm(instance=request.user.addresses.first())
-
-    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
-
-    return render(request, 'customers/profile.html', {
-        'profile_form': profile_form,
-        'address_form': address_form,
-        'orders': orders,
-    })
+# @login_required
+# def profile_view(request):
+#     if request.method == 'POST':
+#         profile_form = CustomerProfileForm(request.POST, instance=request.user)
+#         address_form = AddressForm(request.POST, instance=request.user.addresses.first())
+#         if profile_form.is_valid() and address_form.is_valid():
+#             profile_form.save()
+#             additional_emails = profile_form.cleaned_data['additional_emails']
+#             request.user.additional_emails = [email.strip() for email in additional_emails.split(',') if email.strip()]
+#             request.user.save()
+#             address_form.save()
+#             messages.success(request, 'Profile updated successfully!')
+#     else:
+#         profile_form = CustomerProfileForm(instance=request.user)
+#         address_form = AddressForm(instance=request.user.addresses.first())
+#
+#     orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+#
+#     return render(request, 'customers/profile.html', {
+#         'profile_form': profile_form,
+#         'address_form': address_form,
+#         'orders': orders,
+#     })
 
 @login_required
 def order_history_view(request):
@@ -555,6 +583,20 @@ def request_return_view(request, order_item_id):
 
 
 
+
+@login_required
+def profile_view(request):
+    # Reuse the logic from profile_view
+    profile_form = CustomerProfileForm(instance=request.user)
+    address_form = AddressForm(instance=request.user.addresses.first())
+    orders = Order.objects.filter(customer=request.user).order_by('-created_at')
+
+    # Pass all data to the template
+    return render(request, 'customers/profiletest.html', {
+        'profile_form': profile_form,
+        'address_form': address_form,
+        'orders': orders,
+    })
 
 
 
